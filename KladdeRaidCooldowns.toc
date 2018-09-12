@@ -1,0 +1,16 @@
+## Interface: 30300
+## Title: KladdeRaidCooldowns
+## Notes: Displays Raid Cooldowns
+## Author: Kladde
+## Version: 0.1
+## SavedVariables: KladdeRaidCooldownsDB
+
+embeds.xml
+
+KRC_Helpers.lua
+KRC_PallyAuras.lua
+KRC_Cooldowns.lua
+KRC_Config_PallyAuras.lua
+KRC_Config_Cooldowns.lua
+KRC_Config.lua
+KRC_Core.lua
