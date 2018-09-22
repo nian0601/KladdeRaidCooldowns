@@ -7,6 +7,8 @@
 
 embeds.xml
 
+KRC_Helpers.lua
 KRC_Spells.lua
 KRC_DataCollector.lua
 KRC_Display.lua
+KRC_Core.lua
