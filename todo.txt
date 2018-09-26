@@ -3,6 +3,8 @@ TODO:
 - Add menu where we can select either specc, or available spells for each raidmember. This also needs to be persisted
 - Add "Extra Information" that I added in old addon. Target of spell and Aura for Aura Mastery
 - Add PallyAura-tracker that old addon has
+- Add Deterance
+- Fix raid-update bug. CDs wont recheck for availability until someone moves ppl in the grp. Atleast make it check once when joining. But there is no event for this, so need to do a "WasInRaid~=IsInRaid" thingy
 
 
 Version 1.0
