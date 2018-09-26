@@ -1,0 +1,20 @@
+TODO:
+- Groups grow weirdly. Ideal setup: You place the group-heading, and then that never moves, spells just grow downwards
+- Add menu where we can select either specc, or available spells for each raidmember. This also needs to be persisted
+- Add "Extra Information" that I added in old addon. Target of spell and Aura for Aura Mastery
+- Add PallyAura-tracker that old addon has
+
+
+Version 1.0
+
+Groups:
+- Can create any number of groups and assign spells to them, spells can be either "Show On Cd" or "Show Always"
+- Can move groups around and the position is persisted
+- Groups grow down, kindof, its weird, they also grow up sometimes?? Needs to be fixed
+
+Spells:
+- Almost all spells that we care about are tracked, need to add deterance
+- All spells have short-names
+- We dont do any specc-checks, because blizzard wont let us. The plan is to add a menu where we manually can set specc, or available spells, per raid member (this should also be persisted)
+- We dont properly track GuardianSpirit
+- There is no "extra information" (target of spell, aura for Aura Mastery), needs to be added

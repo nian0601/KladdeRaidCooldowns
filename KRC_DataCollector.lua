@@ -27,7 +27,54 @@ KRC_DataCollector.myPaladinAuras = {}
 
 function KRC_DataCollector:OnInitialize()
 	self:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+	self:RegisterEvent("PARTY_MEMBERS_CHANGED", "ScanGroupForSpells")
+	self:RegisterEvent("RAID_ROSTER_UPDATE", "ScanGroupForSpells")
+	self:RegisterEvent("RAID_TARGET_UPDATE", "ScanGroupForSpells")
+	
+
+
+	local name = UnitName("player")
+	local _,class = UnitClass("player")
+	self:InitializeSpellsForPlayer(name, class)
+
+	self:ScanGroupForSpells()
 end	
+
+function KRC_DataCollector:InitializeSpellsForPlayer(aPlayerName, aPlayerClass)
+	local spells = KRC_Spells.mySpells[aPlayerClass]
+
+	for spellID, spellData in pairs(spells) do
+		if(self.myData[spellID] == nil) then
+			self.myData[spellID] = {}
+		end
+
+		if(self.myData[spellID][aPlayerName] == nil) then
+			self.myData[spellID][aPlayerName] = {}
+			local casterData = self.myData[spellID][aPlayerName]
+			casterData.myClass = aPlayerClass
+			casterData.myRemainingCD = nil
+			casterData.myTarget = nil
+		end
+	end
+end
+
+function KRC_DataCollector:ScanGroupForSpells()
+	local numRaidMembers = GetNumRaidMembers()
+	for i = 1, numRaidMembers do
+		local memberName = UnitName("raid" .. i)
+		local _, memberClass = UnitClass("raid" .. i)
+		self:InitializeSpellsForPlayer(memberName, memberClass)
+	end
+
+	local numPartyMembers = GetNumPartyMembers()
+	for i = 1, numPartyMembers do
+		local memberName = UnitName("party" .. i)
+		local _, memberClass = UnitClass("party" .. i)
+		self:InitializeSpellsForPlayer(memberName, memberClass)
+	end
+
+	self.myHasGroupChange = true
+end
 
 function KRC_DataCollector:UpdatePaladinAuras()
 	local cachedAuras = KRC_Spells.myPaladinAuras
@@ -48,12 +95,20 @@ function KRC_DataCollector:Update()
 
 	for spellID, spellData in pairs(self.myData) do 
 		for casterName, casterData in pairs(spellData) do 
-			casterData.myRemainingCD = casterData.myRemainingCD - 1
-			if (casterData.myRemainingCD < 0) then
-				casterData.myRemainingCD = 0
+			if(casterData.myRemainingCD ~= nil) then
+				casterData.myRemainingCD = casterData.myRemainingCD - 1
+				if (casterData.myRemainingCD < 0) then
+					casterData.myRemainingCD = nil
+				end
+			end
+
+			if(self.myHasGroupChange == true) then
+				casterData.myUnitID = KRC_Helpers:GetUnitID(casterName)
 			end
 		end
 	end
+
+	self.myHasGroupChange = false
 end
 
 function KRC_DataCollector:GetPaladinAura(aPaladinName)
@@ -93,6 +148,7 @@ function KRC_DataCollector:AddData(aCasterName, aCasterClass, aSpellID, aTarget)
 	casterData.myClass = aCasterClass
 	casterData.myRemainingCD = spellCD
 	casterData.myTarget = nil
+	casterData.myUnitID = KRC_Helpers:GetUnitID(aCasterName)
 	if(KRC_Spells:SpellIsTargeted(aSpellID)) then
 		casterData.myTarget = aTarget
 	end
