@@ -24,56 +24,60 @@ shirubaInfo.myGuardianSpiritFaded
 KRC_DataCollector = LibStub("AceAddon-3.0"):NewAddon("KRC_DataCollector", "AceConsole-3.0", "AceEvent-3.0")
 KRC_DataCollector.myData = {}
 KRC_DataCollector.myPaladinAuras = {}
+KRC_DataCollector.myNumTicksSinceLastGroupScan = 0
+KRC_DataCollector.myEnableDebugPrinting = false
 
 function KRC_DataCollector:OnInitialize()
 	self:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
-	self:RegisterEvent("PARTY_MEMBERS_CHANGED", "ScanGroupForSpells")
-	self:RegisterEvent("RAID_ROSTER_UPDATE", "ScanGroupForSpells")
-	self:RegisterEvent("RAID_TARGET_UPDATE", "ScanGroupForSpells")
+	--self:RegisterEvent("PARTY_MEMBERS_CHANGED", "ScanGroupForSpells")
+	--self:RegisterEvent("RAID_ROSTER_UPDATE", "ScanGroupForSpells")
+	--self:RegisterEvent("RAID_TARGET_UPDATE", "ScanGroupForSpells")
 	
 
-
-	local name = UnitName("player")
-	local _,class = UnitClass("player")
-	self:InitializeSpellsForPlayer(name, class)
+	self:InitializeSpellsForPlayer("player")
 
 	self:ScanGroupForSpells()
 end	
 
-function KRC_DataCollector:InitializeSpellsForPlayer(aPlayerName, aPlayerClass)
-	local spells = KRC_Spells.mySpells[aPlayerClass]
+function KRC_DataCollector:DebugPrint(aMessage)
+	if(self.myEnableDebugPrinting == true) then
+		self:Print(aMessage)
+	end
+end
+
+function KRC_DataCollector:InitializeSpellsForPlayer(aUnitID)
+	local name = UnitName(aUnitID)
+	local _,class = UnitClass(aUnitID)
+
+	local spells = KRC_Spells.mySpells[class]
 
 	for spellID, spellData in pairs(spells) do
 		if(self.myData[spellID] == nil) then
 			self.myData[spellID] = {}
 		end
 
-		if(self.myData[spellID][aPlayerName] == nil) then
-			self.myData[spellID][aPlayerName] = {}
-			local casterData = self.myData[spellID][aPlayerName]
-			casterData.myClass = aPlayerClass
+		if(self.myData[spellID][name] == nil) then
+			self.myData[spellID][name] = {}
+			local casterData = self.myData[spellID][name]
+			casterData.myClass = class
 			casterData.myRemainingCD = nil
 			casterData.myTarget = nil
 		end
+
+		self.myData[spellID][name].myUnitID = aUnitID
 	end
 end
 
 function KRC_DataCollector:ScanGroupForSpells()
 	local numRaidMembers = GetNumRaidMembers()
 	for i = 1, numRaidMembers do
-		local memberName = UnitName("raid" .. i)
-		local _, memberClass = UnitClass("raid" .. i)
-		self:InitializeSpellsForPlayer(memberName, memberClass)
+		self:InitializeSpellsForPlayer("raid" .. i)
 	end
 
 	local numPartyMembers = GetNumPartyMembers()
 	for i = 1, numPartyMembers do
-		local memberName = UnitName("party" .. i)
-		local _, memberClass = UnitClass("party" .. i)
-		self:InitializeSpellsForPlayer(memberName, memberClass)
+		self:InitializeSpellsForPlayer("party" .. i)
 	end
-
-	self.myHasGroupChange = true
 end
 
 function KRC_DataCollector:UpdatePaladinAuras()
@@ -91,24 +95,25 @@ end
 
 function KRC_DataCollector:Update()
 
-	self:UpdatePaladinAuras()
+	self.myNumTicksSinceLastGroupScan = self.myNumTicksSinceLastGroupScan + 1
+	if(self.myNumTicksSinceLastGroupScan > 10) then
+		self:ScanGroupForSpells()
+		self.myNumTicksSinceLastGroupScan = 0
+	end
 
+	self:UpdatePaladinAuras()
+	self:InitializeSpellsForPlayer("player")
 	for spellID, spellData in pairs(self.myData) do 
 		for casterName, casterData in pairs(spellData) do 
 			if(casterData.myRemainingCD ~= nil) then
 				casterData.myRemainingCD = casterData.myRemainingCD - 1
+				self:DebugPrint("CD On " .. GetSpellInfo(spellID) .. ": " .. casterData.myRemainingCD)
 				if (casterData.myRemainingCD < 0) then
 					casterData.myRemainingCD = nil
 				end
 			end
-
-			if(self.myHasGroupChange == true) then
-				casterData.myUnitID = KRC_Helpers:GetUnitID(casterName)
-			end
 		end
 	end
-
-	self.myHasGroupChange = false
 end
 
 function KRC_DataCollector:GetPaladinAura(aPaladinName)
@@ -126,7 +131,6 @@ function KRC_DataCollector:GetPaladinAura(aPaladinName)
 end
 
 function KRC_DataCollector:AddData(aCasterName, aCasterClass, aSpellID, aTarget)
-
 	-- This will be nil if we dont have any CD info for this spell, so just return in that case
 	local spellCD = KRC_Spells:GetSpellCD(aCasterName, aCasterClass, aSpellID)
 	if(spellCD == nil) then

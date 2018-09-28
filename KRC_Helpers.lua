@@ -26,18 +26,23 @@ end
 
 function KRC_Helpers:GetUnitID(aUnitName)
 	local numRaidMembers = GetNumRaidMembers()
-	for i = 1, numRaidMembers do
+	if(numRaidMembers > 0) then
+		for i = 1, MAX_RAID_MEMBERS  do
 		local id = "raid " .. i
 		local memberName = UnitName(id)
+
 		if(memberName == aUnitName) then
 			return id
 		end
 	end
+	end
+	
 
 	local numPartyMembers = GetNumPartyMembers()
 	for i = 1, numPartyMembers do
 		local id = "party" .. i
 		local memberName = UnitName(id)
+		
 		if(memberName == aUnitName) then
 			return id
 		end

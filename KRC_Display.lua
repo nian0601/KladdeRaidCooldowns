@@ -44,6 +44,7 @@ KRC_Display = LibStub("AceAddon-3.0"):NewAddon("KRC_Display", "AceConsole-3.0", 
 KRC_Display.myTextHeight = 10
 KRC_Display.myGroups = {}
 KRC_Display.myFreeFrames = {}
+KRC_Display.myEnableDebugPrinting = false
 
 function KRC_Display:Init()
 	self.myMediaPath = "Interface\\Addons\\KladdeRaidCooldowns_V2\\Media\\"
@@ -57,6 +58,11 @@ function KRC_Display:Init()
 	--self:CreateEmptyGroup("Raid CDs")
 end	
 
+function KRC_Display:DebugPrint(aMessage)
+	if(self.myEnableDebugPrinting == true) then
+		self:Print(aMessage)
+	end
+end
 
 --
 -- Group Management
@@ -177,7 +183,7 @@ local function CompareFrames(aFrame, bFrame)
 		return a.mySpellID < b.mySpellID
 	end
 
-	return a.myTimeRemaining < b.myTimeRemaining
+	return a.myRemainingCD < b.myRemainingCD
 end
 
 function KRC_Display:CreateFrameAndAddToGroup(aGroup, aSpellID, aCasterName, aCasterClass)
@@ -194,7 +200,7 @@ function KRC_Display:CreateFrameAndAddToGroup(aGroup, aSpellID, aCasterName, aCa
 	frame.mySpellID = aSpellID
 	frame.myCaster = aCasterName
 	frame.myCasterClass = aCasterClass
-	frame.myTimeRemaining = 10000
+	frame.myRemainingCD = 10000
 
 	frame:ClearAllPoints()
 	frame:SetPoint("TOPLEFT", aGroup.myMainFrame, "TOPLEFT", 0, 0)
@@ -336,16 +342,25 @@ end
 -- Updates
 --
 
-function KRC_Display:FrameIsRequired(aCasterName, someCasterData)
+function KRC_Display:CasterCanCastSpell(aCasterName, someCasterData)
+
+	if(someCasterData.myUnitID == nil) then
+		self:DebugPrint("UnitID for " .. aCasterName .. " is invalid.")
+		return false
+	end
+
 	if (UnitIsVisible(someCasterData.myUnitID) == nil) then
+		self:DebugPrint(aCasterName .. " .. (" .. someCasterData.myUnitID .. ") is not visible.")
 		return false
 	end
 
 	if (UnitExists(someCasterData.myUnitID) == nil) then
+		self:DebugPrint(aCasterName .. " .. (" .. someCasterData.myUnitID .. ") doesnt exist.")
 		return false
 	end
 
 	if (KRC_Helpers:UnitIsInOurRaidOrParty(aCasterName) == false) then
+		self:DebugPrint(aCasterName .. " is not in our group or raid.")
 		return false
 	end
 
@@ -357,59 +372,67 @@ function KRC_Display:FrameIsRequired(aCasterName, someCasterData)
 	return true
 end
 
+function KRC_Display:UpdateFrameProgress(aFrame, someCasterData, aShouldAlwaysShow)
+	local remainingTime = someCasterData.myRemainingCD
+
+	aFrame.myRemainingCD = remainingTime
+	if(remainingTime == nil) then
+		aFrame.myRemainingCD = 0
+	end
+
+	if (aFrame.myRemainingCD > 0) then
+		aFrame.myCooldownLabel.Text:SetTextColor(0.85, 0.1, 0.1)
+		aFrame.myCooldownLabel.Text:SetFormattedText(SecondsToTimeDetail(aFrame.myRemainingCD))
+	elseif (aShouldAlwaysShow == true) then
+		aFrame.myCooldownLabel.Text:SetTextColor(0.1, 0.85, 0.1)
+		aFrame.myCooldownLabel.Text:SetText("READY")
+	end
+end
+
 function KRC_Display:UpdateSpellDataInGroup(aSpellID, someSpellData, aGroup)
 
 	local isEnabled = aGroup.mySpells[aSpellID].myEnabled
 	local shouldAlwaysShow = aGroup.mySpells[aSpellID].myAlwaysShow
 
 	for casterName, casterData in pairs(someSpellData) do 
-		local frameRequired = false
-		if(isEnabled == true) then
-			frameRequired = self:FrameIsRequired(casterName, casterData)
-		end
-
-
-		if(frameRequired == true) then
-			frameRequired = casterData.myRemainingCD ~= nil or shouldAlwaysShow
-		end
-			
 		local frame, frameIndex = self:FindFrameInGroup(aGroup, aSpellID, casterName)
-		if (frame == nil and frameRequired == true) then
-			frame, frameIndex = self:CreateFrameAndAddToGroup(aGroup, aSpellID, casterName, casterData.myClass)
-		end
 
-		if (frame ~= nil) then
-
-			if(frameRequired == true) then
-				local remainingTime = casterData.myRemainingCD
-
-				frame.myTimeRemaining = remainingTime
-				if(remainingTime == nil) then
-					frame.myTimeRemaining = 0
-				end
-
-				if (frame.myTimeRemaining > 0) then
-					frame.myCooldownLabel.Text:SetTextColor(0.85, 0.1, 0.1)
-					frame.myCooldownLabel.Text:SetFormattedText(SecondsToTimeDetail(frame.myTimeRemaining))
-				elseif (shouldAlwaysShow == true) then
-					frame.myCooldownLabel.Text:SetTextColor(0.1, 0.85, 0.1)
-					frame.myCooldownLabel.Text:SetText("READY")
-				end
-			else
+		-- If we have a frame, but it has been disabled,
+		-- or the caster cannot cast the spell anymore, 
+		-- then we should remove the frame
+		local spellCannotBeShown = isEnabled == false or self:CasterCanCastSpell(casterName, casterData) == false
+		if(spellCannotBeShown == true) then
+			if(frame ~= nil) then
+				self:DebugPrint("Removing " .. GetSpellInfo(aSpellID) .. " from " .. casterName .. ", it cannot be shown anymore")
 				self:RemoveFrameFromGroup(frame, frameIndex, aGroup)
 			end
-		end	
+		else
+			-- If the spell is on cooldown, or we should always show this spell then we require a frame,
+			-- which means we have to create one if we didnt have one allready
+			local frameRequired = casterData.myRemainingCD ~= nil or shouldAlwaysShow
+			if (frame == nil and frameRequired == true) then
+				frame, frameIndex = self:CreateFrameAndAddToGroup(aGroup, aSpellID, casterName, casterData.myClass)
+			end
+
+			if(frame ~= nil) then
+				if(frameRequired == false) then
+					self:DebugPrint("Removing " .. GetSpellInfo(aSpellID) .. " from " .. casterName .. ", the frame is not required anymore")
+					self:RemoveFrameFromGroup(frame, frameIndex, aGroup)
+				else
+					self:UpdateFrameProgress(frame, casterData, shouldAlwaysShow)
+				end
+			end
+		end
+		
 	end
 end
 
 function KRC_Display:Update()
 	for groupName, group in pairs(self.myGroups) do 
 		for spellID, spellData in pairs(KRC_DataCollector.myData) do
-			if (group.mySpells[spellID] == nil) then
-				group.mySpells[spellID] = {}
+			if (group.mySpells[spellID] ~= nil) then
+				self:UpdateSpellDataInGroup(spellID, spellData, group)
 			end
-
-			self:UpdateSpellDataInGroup(spellID, spellData, group)
 		end
 	end
 end
