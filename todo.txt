@@ -1,8 +1,4 @@
 TODO:
-- Need some way of determining which specc raidmembers have
-	- Either use gladius way of autodetecting
-	- Or add a menu where you can select the specc for each raidmember
-- Add white/black-listing option for each group, so we can choose which raidmembers or speccs appear in each group
 - Add druid-enrage as tankcd
 - Add "Extra Information" that I added in old addon. Target of spell and Aura for Aura Mastery
 - Add PallyAura-tracker that old addon has
@@ -10,6 +6,10 @@ TODO:
 - Add small spacing between spells
 - Fix spell-sorting. Class -> Spell -> CD
 
+
+Version 1.3
+- We can now assign speccs to all raidmembers in a new menu in the config
+- Each group can also filter on speccs for each class, Example: "Only show spells from Paladin Tanks"
 
 Version 1.2
 - Added Deterance and Readiness (readiness also resets all other hunter-cds)

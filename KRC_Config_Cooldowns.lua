@@ -67,10 +67,10 @@ local function CreateSpeccGroup(aClass)
 	local speccs = KRC_Spells.mySpeccs[aClass]
 	local createBox = function(aString)
 		local box = KRC_Config.myGUI:Create("CheckBox")
-		--tank:SetValue(KRC_Display:IsGroupGrowUp(ourSelectedGroup))
+		box:SetValue(KRC_Display:IsSpeccActiveForGroup(ourSelectedGroup, aClass, aString))
 		box:SetLabel("Show " .. aString)
 		box:SetCallback("OnValueChanged", function(widget, event, value)
-			--KRC_Display:SetGroupGrowUp(ourSelectedGroup, value)
+			KRC_Display:SetSpeccStatusForGroup(ourSelectedGroup, aClass, aString, value)
 		end)
 
 		return box;
@@ -79,19 +79,10 @@ local function CreateSpeccGroup(aClass)
 	local speccGroup = KRC_Config.myGUI:Create("SimpleGroup")
 	speccGroup:SetLayout("Flow")
 	speccGroup:SetFullWidth(true)
-	if(speccs["Tank"] ~= nil) then
-		speccGroup:AddChild(createBox("Tank"))
-	end
 
-	if(speccs["Heal"] ~= nil) then
-		speccGroup:AddChild(createBox("Heal"))
+	for specc, active in pairs(speccs) do
+		speccGroup:AddChild(createBox(specc))
 	end
-
-	if(speccs["DPS"] ~= nil) then
-		speccGroup:AddChild(createBox("DPS"))
-	end
-
-	
 
 	return speccGroup
 end
@@ -206,11 +197,23 @@ local function DrawClassSettings(aContainer, anEvent, aClass)
 		local scrollFrame = KRC_Config.myGUI:Create("ScrollFrame")
 		scrollFrame:SetLayout("Flow")
 		scrollFrame:SetFullWidth(true)
+		scrollFrame:SetFullHeight(true)
 
 		local speccGroup = CreateSpeccGroup(aClass)
 		if(speccGroup ~= nil) then
-			aContainer:AddChild(speccGroup)
+
+			local speccsHeading = KRC_Config.myGUI:Create("Heading")
+			speccsHeading:SetText("Speccs")
+			speccsHeading:SetFullWidth(true)
+			scrollFrame:AddChild(speccsHeading)
+
+			scrollFrame:AddChild(speccGroup)
 		end
+
+		local spellsHeading = KRC_Config.myGUI:Create("Heading")
+		spellsHeading:SetText("Spells")
+		spellsHeading:SetFullWidth(true)
+		scrollFrame:AddChild(spellsHeading)
 
 		for i, spellID in next, temp do
 			scrollFrame:AddChild(CreateSpellGroup(spellID))

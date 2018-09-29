@@ -7,6 +7,8 @@ local function SelectGroup(container, event, group)
 		KRC_Config_DrawCooldowns(container)
 	--elseif group == "pally_auras" then
 	--	KRC_Config_DrawPallyAuras(container)
+	elseif group == "speccs" then
+		KRC_Config_DrawSpeccs(container)
 	end
 end
 
@@ -28,7 +30,8 @@ function KRC_Config:OnEnable()
 		tabGroup:SetTabs(
 		{
 			{ text="Cooldowns", value="cooldowns" },
-			{ text="Pally Auras", value="pally_auras" }
+			{ text="Pally Auras", value="pally_auras" },
+			{ text="Speccs", value="speccs" }
 		})
 		tabGroup:SetCallback("OnGroupSelected", SelectGroup)
 		tabGroup:SelectTab("cooldowns")

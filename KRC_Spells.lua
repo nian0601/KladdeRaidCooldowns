@@ -8,16 +8,45 @@ KRC_Spells.myMisdirectionID = 34477
 KRC_Spells.myTricksOfTheTradeID = 57934
 
 KRC_Spells.mySpeccs = {
-	DRUID = {["Tank"] = 1, ["Heal"] = 1, ["DPS"] = 1},
-	HUNTER = {["DPS"] = 1},
-	MAGE = {["DPS"] = 1},
-	PALADIN = {["Tank"] = 1, ["Heal"] = 1, ["DPS"] = 1},
-	PRIEST = {["Heal"] = 1, ["DPS"] = 1},
-	ROGUE = {["DPS"] = 1},
-	SHAMAN = {["Heal"] = 1, ["DPS"] = 1},
-	WARLOCK = {["DPS"] = 1},
-	WARRIOR = {["Tank"] = 1, ["DPS"] = 1},
-	DEATHKNIGHT = {["Tank"] = 1, ["DPS"] = 1},
+	DRUID = {
+		["Tank"] = 1,
+		["Heal"] = 1,
+		["DPS"] = 1
+	},
+	HUNTER = {
+		["DPS"] = 1
+	},
+	MAGE = {
+		["DPS"] = 1
+	},
+	PALADIN = {
+		["Tank"] = 1,
+		["Heal"] = 1, 
+		["DPS"] = 1
+	},
+	PRIEST = {
+		["Disc"] = 1,
+		["Holy"] = 1,
+		["DPS"] = 1
+	},
+	ROGUE = {
+		["DPS"] = 1
+	},
+	SHAMAN = {
+		["Heal"] = 1, 
+		["DPS"] = 1
+	},
+	WARLOCK = {
+		["DPS"] = 1
+	},
+	WARRIOR = {
+		["Tank"] = 1, 
+		["DPS"] = 1
+	},
+	DEATHKNIGHT = {
+		["Tank"] = 1,
+	 	["DPS"] = 1
+	 },
 }
 
 KRC_Spells.mySpells = {
@@ -36,7 +65,9 @@ KRC_Spells.mySpells = {
 			["Cooldown"] = 180,
 			["Name"] = "Nature's Swiftness",
 			["ShortName"] = "NS",
-			["TalentRequirement"] = "Resto"
+			["TalentRequirement"] = {
+				["Heal"] = 1
+			}
 		},
 		[5209] = {
 			["Cooldown"] = 180,
@@ -78,8 +109,7 @@ KRC_Spells.mySpells = {
 		[34490] = {
 			["Cooldown"] = 20,
 			["Name"] = "Silencing Shot",
-			["ShortName"] = "SS",
-			["TalentRequirement"] = "Marksmanship"
+			["ShortName"] = "SS"
 		},
 		[13809] = {
 			["Cooldown"] = 30,
@@ -129,19 +159,26 @@ KRC_Spells.mySpells = {
 			["Cooldown"] = 120,
 			["Name"] = "Aura Mastery",
 			["ShortName"] = "AM",
-			["TalentRequirement"] = "Holy, Retribution"
+			["TalentRequirement"] = {
+				["Heal"] = 1, 
+				["DPS"] = 1
+			}
 		},
 		[20216] = {
 			["Cooldown"] = 120,
 			["Name"] = "Divine Favor",
 			["ShortName"] = "DF",
-			["TalentRequirement"] = "Holy"
+			["TalentRequirement"] = {
+				["Heal"] = 1
+			}
 		},
 		[31842] = {
 			["Cooldown"] = 180,
 			["Name"] = "Divine Illumination",
 			["ShortName"] = "DI",
-			["TalentRequirement"] = "Holy"
+			["TalentRequirement"] = {
+				["Heal"] = 1
+			}
 		},
 		[19752] = {
 			["Cooldown"] = 600,
@@ -157,7 +194,10 @@ KRC_Spells.mySpells = {
 			["Cooldown"] = 120,
 			["Name"] = "Divine Sacrifice",
 			["ShortName"] = "DSac",
-			["TalentRequirement"] = "Holy, Protection"
+			["TalentRequirement"] = {
+				["Tank"] = 1, 
+				["Heal"] = 1
+			}
 		},
 		[54428] = {
 			["Cooldown"] = 60,
@@ -198,7 +238,9 @@ KRC_Spells.mySpells = {
 			["Cooldown"] = 120,
 			["Name"] = "Ardent Defender",
 			["ShortName"] = "AD",
-			["TalentRequirement"] = "Protection"
+			["TalentRequirement"] = {
+				["Tank"] = 1
+			}
 		}
 	},
 	PRIEST = {
@@ -206,13 +248,17 @@ KRC_Spells.mySpells = {
 			["Cooldown"] = 144,
 			["Name"] = "Pain Suppression",
 			["ShortName"] = "PS",
-			["TalentRequirement"] = "Discipline"
+			["TalentRequirement"] = {
+				["Disc"] = 1
+			}
 		},
 		[47788] = {
 			["Cooldown"] = 180,
 			["Name"] = "Guardian Spirit",
 			["ShortName"] = "GS",
-			["TalentRequirement"] = "Holy"
+			["TalentRequirement"] = {
+				["Holy"] = 1
+			}
 		},
 		[6346] = {
 			["Cooldown"] = 180,
@@ -238,13 +284,17 @@ KRC_Spells.mySpells = {
 			["Cooldown"] = 96,
 			["Name"] = "Power Infusion",
 			["ShortName"] = "PI",
-			["TalentRequirement"] = "Discipline"
+			["TalentRequirement"] = {
+				["Disc"] = 1
+			}
 		},
 		[47585] = {
 			["Cooldown"] = 180,
 			["Name"] = "Dispersion",
 			["ShortName"] = "Disp",
-			["TalentRequirement"] = "Shadow"
+			["TalentRequirement"] = {
+				["DPS"] = 1
+			}
 		}
 	},
 	ROGUE = {
@@ -351,7 +401,10 @@ KRC_Spells.mySpells = {
 		[16190] = {
 			["Cooldown"] = 300,
 			["Name"] = "Mana Tide Totem",
-			["ShortName"] = "Tide"
+			["ShortName"] = "Tide",
+			["TalentRequirement"] = {
+				["Heal"] = 1
+			}
 		},
 		[2894] = {
 			["Cooldown"] = 600,
@@ -367,7 +420,9 @@ KRC_Spells.mySpells = {
 			["Cooldown"] = 180,
 			["Name"] = "Nature's Swiftness",
 			["ShortName"] = "NS",
-			["TalentRequirement"] = "Resto"
+			["TalentRequirement"] = {
+				["Heal"] = 1
+			}
 		},
 		[57994] = {
 			["Cooldown"] = 6,
@@ -429,7 +484,9 @@ KRC_Spells.mySpells = {
 			["Cooldown"] = 180,
 			["Name"] = "Last Stand",
 			["ShortName"] = "LS",
-			["TalentRequirement"] = "Protection"
+			["TalentRequirement"] = {
+				["Tank"] = 1
+			}
 		},
 		[6554] = {
 			["Cooldown"] = 10,
@@ -617,17 +674,6 @@ function KRC_Spells:IsTricksOfTheTrade(aSpellID)
 	return aSpellID == self.myTricksOfTheTradeID
 end
 
-function KRC_Spells:CanCastSpell(aSpellID, aClass, aUnitID)
-	local classInfo = self.mySpells[aClass]
-	local spellInfo = classInfo[aSpellID]
-
-	if(spellInfo == nil) then
-		return false
-	end
-
-	if(spellInfo["CheckTalent"] == nil) then
-		return true
-	end
-
-	return spellInfo["CheckTalent"](aUnitID)
+function KRC_Spells:GetSpellTalentRequirements(aClass, aSpellID)
+	return self.mySpells[aClass][aSpellID]["TalentRequirement"]
 end

@@ -65,6 +65,33 @@ function KRC_Display:DebugPrint(aMessage)
 	end
 end
 
+function KRC_Display:IsInLockedMode()
+	return KRC_Core.db.profile.myIsLocked
+end
+
+function KRC_Display:SetLockedMode(aStatus)
+	KRC_Core.db.profile.myIsLocked = aStatus
+
+	for groupName, group in pairs(self.myGroups) do 
+		self:SetGroupLockedStatus(group, aStatus)
+	end
+end
+
+function KRC_Display:GetPlayerSpecc(aPlayerName)
+	local settings = KRC_Core.db.profile
+
+	return settings.myPlayerSpeccs[aPlayerName]
+end
+
+function KRC_Display:SetPlayerSpecc(aPlayerName, aSpecc, aShouldSet)
+	local settings = KRC_Core.db.profile
+
+	if(aShouldSet == false and settings.myPlayerSpeccs[aPlayerName] == aSpecc) then
+		settings.myPlayerSpeccs[aPlayerName] = nil
+	elseif(aShouldSet == true) then
+		settings.myPlayerSpeccs[aPlayerName] = aSpecc
+	end
+end
 --
 -- Group Management
 --
@@ -84,6 +111,18 @@ function KRC_Display:InitializeGroupDBVariables(aGroupName)
 	local settings = KRC_Core.db.profile.myGroups[aGroupName]
 	if (settings.mySpells == nil) then
 		settings.mySpells = {}
+	end
+
+	if (settings.mySpeccs == nil) then
+		settings.mySpeccs = {}
+
+		for class, speccInfo in pairs(KRC_Spells.mySpeccs) do
+			settings.mySpeccs[class] = {}
+
+			for speccName, active in pairs(speccInfo) do
+				settings.mySpeccs[class][speccName] = true	
+			end
+		end
 	end
 
 	if(settings.myGrowBarsUp == nil) then
@@ -128,8 +167,8 @@ function KRC_Display:CreateEmptyGroup(aGroupName)
 	mainFrame:SetScript("OnDragStart", mainFrame.StartMoving)
 	mainFrame:SetScript("OnDragStop", function(aWidget)
 		aWidget:StopMovingOrSizing()
-		KRC_Core.db.profile.myGroups[aGroupName].myBottomLeftX = aWidget:GetLeft()
-		KRC_Core.db.profile.myGroups[aGroupName].myBottomLeftY = aWidget:GetBottom()
+		KRC_Core.db.profile.myGroups[aGroupName].myBottomLeftX = aWidget:GetLeft() * UIParent:GetEffectiveScale()
+		KRC_Core.db.profile.myGroups[aGroupName].myBottomLeftY = aWidget:GetBottom() * UIParent:GetEffectiveScale()
 	end)
 
 	mainFrame.myBackground = mainFrame:CreateTexture(nil, "LOW")
@@ -185,45 +224,56 @@ function KRC_Display:ApplyGroupSettings(aGroup, someSettings)
 	self:SetGroupLockedStatus(aGroup, KRC_Core.db.profile.myIsLocked)
 end
 
-function KRC_Display:IsInLockedMode()
-	return KRC_Core.db.profile.myIsLocked
-end
-
-function KRC_Display:SetLockedMode(aStatus)
-	KRC_Core.db.profile.myIsLocked = aStatus
-
-	for groupName, group in pairs(self.myGroups) do 
-		self:SetGroupLockedStatus(group, aStatus)
-	end
-end
-
 function KRC_Display:SetGroupLockedStatus(aGroup, aStatus)
 	aGroup.myMainFrame:SetMovable(aStatus)
 	aGroup.myMainFrame:EnableMouse(aStatus)
 end
 
-function KRC_Display:IsGroupGrowUp(aGroup)
-	local realGroup = self.myGroups[aGroup]
+function KRC_Display:IsGroupGrowUp(aGroupName)
+	local realGroup = self.myGroups[aGroupName]
 	if (realGroup == nil) then
 		return false
 	end
 
-	local groupSettings = self:GetGroupSettings(aGroup)
+	local groupSettings = self:GetGroupSettings(aGroupName)
 	return groupSettings.myGrowBarsUp
 end
 
-function KRC_Display:SetGroupGrowUp(aGroup, aValue)
-	local realGroup = self.myGroups[aGroup]
+function KRC_Display:SetGroupGrowUp(aGroupName, aValue)
+	local realGroup = self.myGroups[aGroupName]
 	if (realGroup == nil) then
 		return false
 	end
 
-	local groupSettings = self:GetGroupSettings(aGroup)
+	local groupSettings = self:GetGroupSettings(aGroupName)
 	groupSettings.myGrowBarsUp = aValue
 
 	self:RepositionFramesInGroup(realGroup)
 end
 
+function KRC_Display:IsSpeccActiveForGroup(aGroupName, aClass, aSpecc)
+	local realGroup = self.myGroups[aGroupName]
+	if (realGroup == nil) then
+		return false
+	end
+
+	if(aSpecc == nil) then
+		return false
+	end
+
+	local groupSettings = self:GetGroupSettings(aGroupName)
+	return groupSettings.mySpeccs[aClass][aSpecc] == true
+end
+
+function KRC_Display:SetSpeccStatusForGroup(aGroupName, aClass, aSpecc, aStatus)
+	local realGroup = self.myGroups[aGroupName]
+	if (realGroup == nil) then
+		return
+	end
+
+	local groupSettings = self:GetGroupSettings(aGroupName)
+	groupSettings.mySpeccs[aClass][aSpecc] = aStatus
+end
 
 --
 -- Frame management
@@ -405,8 +455,7 @@ end
 -- Updates
 --
 
-function KRC_Display:CasterCanCastSpell(aCasterName, someCasterData)
-
+function KRC_Display:IsUnitValid(aCasterName, someCasterData)
 	if(someCasterData.myUnitID == nil) then
 		self:DebugPrint("UnitID for " .. aCasterName .. " is invalid.")
 		return false
@@ -427,8 +476,41 @@ function KRC_Display:CasterCanCastSpell(aCasterName, someCasterData)
 		return false
 	end
 
-	local canCastSpell = true--KRC_Spells:CanCastSpell(aSpellID, someCasterData.myClass, someCasterData.myUnitID)
-	if(canCastSpell == false) then
+	return true
+end
+
+function KRC_Display:CanUnitCastSpell(aCasterName, aSpellID, someCasterData)
+	local casterSpecc = self:GetPlayerSpecc(aCasterName)
+	local spellRequirements = KRC_Spells:GetSpellTalentRequirements(someCasterData.myClass, aSpellID)
+	if(spellRequirements ~= nil) then
+		if(casterSpecc == nil) then
+			self:DebugPrint(aCasterName .. " has no specc set, dont know if he/she can cast " .. GetSpellInfo(aSpellID) .. ", disabeling it.")
+			return false
+		end
+
+		if(spellRequirements[casterSpecc] == nil) then
+			self:DebugPrint(aCasterName .. " cant cast spell " .. GetSpellInfo(aSpellID) .. ", its not available to specc " .. casterSpecc)
+			return false
+		end
+	end
+
+	return true
+end
+
+function KRC_Display:ShouldGroupShowSpell(aCasterName, aCasterClass, aSpellID, aGroup)
+	if (aGroup.mySpells[aSpellID].myEnabled == false) then
+		self:DebugPrint("Spell " .. GetSpellInfo(aSpellID) .. " is not enabled in group " .. aGroup.myTitle .. ", hiding it.")
+		return false
+	end
+
+	local casterSpecc = self:GetPlayerSpecc(aCasterName)
+	if(casterSpecc == nil) then
+		self:DebugPrint(aCasterName .. " has no specc set, wont show him/her in group " .. aGroup.myTitle)
+		return false;
+	end
+
+	if (self:IsSpeccActiveForGroup(aGroup.myTitle, aCasterClass, casterSpecc) == false) then
+		self:DebugPrint("Specc " .. casterSpecc .. " is not enabled in group " .. aGroup.myTitle .. ", hiding it.")
 		return false
 	end
 
@@ -460,10 +542,14 @@ function KRC_Display:UpdateSpellDataInGroup(aSpellID, someSpellData, aGroup)
 	for casterName, casterData in pairs(someSpellData) do 
 		local frame, frameIndex = self:FindFrameInGroup(aGroup, aSpellID, casterName)
 
+		local casterIsValid = self:IsUnitValid(casterName, casterData)
+		local casterCanCastSpell = self:CanUnitCastSpell(casterName, aSpellID, casterData)
+		local shouldGroupShowSpell = self:ShouldGroupShowSpell(casterName, casterData.myClass, aSpellID, aGroup)
 		-- If we have a frame, but it has been disabled,
 		-- or the caster cannot cast the spell anymore, 
 		-- then we should remove the frame
-		local spellCannotBeShown = isEnabled == false or self:CasterCanCastSpell(casterName, casterData) == false
+
+		local spellCannotBeShown = casterIsValid == false or casterCanCastSpell == false or shouldGroupShowSpell == false
 		if(spellCannotBeShown == true) then
 			if(frame ~= nil) then
 				self:DebugPrint("Removing " .. GetSpellInfo(aSpellID) .. " from " .. casterName .. ", it cannot be shown anymore")
