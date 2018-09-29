@@ -49,6 +49,7 @@ KRC_Display.myEnableDebugPrinting = false
 function KRC_Display:Init()
 	self.myMediaPath = "Interface\\Addons\\KladdeRaidCooldowns_V2\\Media\\"
 
+	self:InitializeGlobalDBVariables()
 
 	for groupName, groupSettings in pairs(KRC_Core.db.profile.myGroups) do 
 		self:CreateEmptyGroup(groupName)
@@ -67,11 +68,40 @@ end
 --
 -- Group Management
 --
-function KRC_Display:CreateEmptyGroup(aGroupName)
+
+function KRC_Display:InitializeGlobalDBVariables()
+	local settings = KRC_Core.db.profile
+	if(settings.myIsLocked == nil) then
+		settings.myIsLocked = false
+	end
+end
+
+function KRC_Display:InitializeGroupDBVariables(aGroupName)
 	if(KRC_Core.db.profile.myGroups[aGroupName] == nil) then
 		KRC_Core.db.profile.myGroups[aGroupName] = {}
-		KRC_Core.db.profile.myGroups[aGroupName].mySpells = {}
+
 	end
+	local settings = KRC_Core.db.profile.myGroups[aGroupName]
+	if (settings.mySpells == nil) then
+		settings.mySpells = {}
+	end
+
+	if(settings.myGrowBarsUp == nil) then
+		settings.myGrowBarsUp = false
+	end
+
+	if(settings.myBarSpacing == nil) then
+		settings.myBarSpacing = 2
+	end
+
+	if(settings.myIsLocked == nil) then
+		settings.myIsLocked = true
+	end
+end
+
+function KRC_Display:CreateEmptyGroup(aGroupName)
+	self:InitializeGroupDBVariables(aGroupName)
+		
 
 	if(self.myGroups[aGroupName] ~= nil) then
 		-- We allready have a group with this name.. output error?
@@ -133,6 +163,10 @@ function KRC_Display:DeleteGroup(aGroupName)
 	KRC_Core.db.profile.myGroups[aGroupName] = nil
 end
 
+function KRC_Display:GetGroupSettings(aGroupName)
+	return KRC_Core.db.profile.myGroups[aGroupName]
+end
+
 function KRC_Display:ApplyGroupSettings(aGroup, someSettings)
 
 	if (someSettings.mySpells ~= nil) then
@@ -147,25 +181,48 @@ function KRC_Display:ApplyGroupSettings(aGroup, someSettings)
 		aGroup.myMainFrame:ClearAllPoints()
 		aGroup.myMainFrame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", someSettings.myBottomLeftX, someSettings.myBottomLeftY)
 	end
+
+	self:SetGroupLockedStatus(aGroup, KRC_Core.db.profile.myIsLocked)
 end
 
-function KRC_Display:IsGroupLocked(aGroup)
+function KRC_Display:IsInLockedMode()
+	return KRC_Core.db.profile.myIsLocked
+end
+
+function KRC_Display:SetLockedMode(aStatus)
+	KRC_Core.db.profile.myIsLocked = aStatus
+
+	for groupName, group in pairs(self.myGroups) do 
+		self:SetGroupLockedStatus(group, aStatus)
+	end
+end
+
+function KRC_Display:SetGroupLockedStatus(aGroup, aStatus)
+	aGroup.myMainFrame:SetMovable(aStatus)
+	aGroup.myMainFrame:EnableMouse(aStatus)
+end
+
+function KRC_Display:IsGroupGrowUp(aGroup)
 	local realGroup = self.myGroups[aGroup]
 	if (realGroup == nil) then
-		return true
+		return false
 	end
 
-	return realGroup.myMainFrame:IsMouseEnabled()
+	local groupSettings = self:GetGroupSettings(aGroup)
+	return groupSettings.myGrowBarsUp
 end
 
-function KRC_Display:ToggleGroupLock(aGroup, aStatus)
+function KRC_Display:SetGroupGrowUp(aGroup, aValue)
 	local realGroup = self.myGroups[aGroup]
-	if (realGroup ~= nil) then
-		realGroup.myMainFrame:SetMovable(aStatus)
-		realGroup.myMainFrame:EnableMouse(aStatus)
+	if (realGroup == nil) then
+		return false
 	end
-end
 
+	local groupSettings = self:GetGroupSettings(aGroup)
+	groupSettings.myGrowBarsUp = aValue
+
+	self:RepositionFramesInGroup(realGroup)
+end
 
 
 --
@@ -278,21 +335,21 @@ end
 function KRC_Display:RepositionFramesInGroup(aGroup)
 	table.sort(aGroup.myFrames, CompareFrames)
 
-	local numFrames = table.getn(aGroup.myFrames)
-
-	local groupSettings = nil
-	for groupName, dbGroupSettings in pairs(KRC_Core.db.profile.myGroups) do 
-		if(aGroup.myTitle == groupName) then
-			groupSetting = dbGroupSettings
-		end
-	end
+	local groupSettings = self:GetGroupSettings(aGroup.myTitle)
 
 	local barSpacing = 2
+	local growUpwards = false
 	if(groupSettings ~= nil) then
-		--self:ApplyGroupSettings(aGroup, groupSettings)
 		barSpacing = groupSettings.myBarSpacing
+		growUpwards = groupSettings.myGrowBarsUp
 	end
 
+	local frameMovement = barSpacing + self.myTextHeight
+	if(growUpwards == true) then
+		frameMovement = -frameMovement
+	end
+
+	local numFrames = table.getn(aGroup.myFrames)
 	if(numFrames > 0) then
 		
 		local width = aGroup.myFrames[1]:GetWidth()
@@ -306,6 +363,13 @@ function KRC_Display:RepositionFramesInGroup(aGroup)
 
 		aGroup.myMainFrame.myBackground:SetWidth(width)
 		aGroup.myMainFrame.myBackground:SetHeight(height)
+
+		aGroup.myMainFrame.myBackground:ClearAllPoints()
+		if(growUpwards == true) then
+			aGroup.myMainFrame.myBackground:SetPoint("BOTTOMLEFT", aGroup.myMainFrame, "TOPLEFT", 0, -self.myTextHeight - 5)
+		else
+			aGroup.myMainFrame.myBackground:SetPoint("TOPLEFT", aGroup.myMainFrame, "TOPLEFT", 0, 0)
+		end
 	end
 
 	-- We dont want to overlap with the group-label
@@ -316,7 +380,7 @@ function KRC_Display:RepositionFramesInGroup(aGroup)
 
 		frame:ClearAllPoints()
 
-		newY = newY - self.myTextHeight - barSpacing
+		newY = newY - frameMovement
 
 		frame:SetPoint("TOPLEFT", aGroup.myMainFrame, "TOPLEFT", 0, newY)
 	end

@@ -25,7 +25,7 @@ function KRC_Core:OnInitialize()
 	self.db = LibStub("AceDB-3.0"):New("KladdeRaidCooldownsV2DB", defaults, true)
 
 	KRC_Display:Init()
-	--KRC_Config:OnEnable()
+	KRC_Config:OnEnable()
 end
 
 function KRC_Core:Update()

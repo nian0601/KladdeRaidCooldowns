@@ -3,14 +3,23 @@ TODO:
 	- Either use gladius way of autodetecting
 	- Or add a menu where you can select the specc for each raidmember
 - Add white/black-listing option for each group, so we can choose which raidmembers or speccs appear in each group
-- Add Deterance
-- Add setting for making the groups grow upwards
-- Make unlock be persisted
+- Add druid-enrage as tankcd
 - Add "Extra Information" that I added in old addon. Target of spell and Aura for Aura Mastery
 - Add PallyAura-tracker that old addon has
+- Once last bar expires the group doesnt shrink down into one line anymore, it stays a bit larger than neccessary
+- Add small spacing between spells
+- Fix spell-sorting. Class -> Spell -> CD
+
+
+Version 1.2
+- Added Deterance and Readiness (readiness also resets all other hunter-cds)
+- MD and Tricks cooldowns now get triggered correctly
 
 Version 1.1
-- Groups now grow down from the label, should be no more wierdness with it growing up sometimes
+- Unlock now unlocks all groups instead of being per group
+- Unlock is also persisted
+- Groups now grow from the label, should be no more wierdness with it growing on both directions sometimes
+- Added setting for growing bars upwards (downwards is default)
 - RaidScanning now properly works, every 10s we'll scan
 
 

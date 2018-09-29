@@ -3,18 +3,21 @@ KRC_Spells = {}
 KRC_Spells.myBloodlustID = UnitFactionGroup("player") == "Alliance" and 32182 or 2825
 KRC_Spells.myAuraMasteryID = 31821
 KRC_Spells.myGuardianSpiritID = 47788
+KRC_Spells.myReadinessID = 23989
+KRC_Spells.myMisdirectionID = 34477
+KRC_Spells.myTricksOfTheTradeID = 57934
 
 KRC_Spells.mySpeccs = {
-	DRUID = {"Balance", "Feral", "Resto"},
-	HUNTER = {"Beast Mastery", "Marksmanship", "Survival"},
-	MAGE = {"Arcane", "Fire", "Frost"},
-	PALADIN = {"Holy", "Protection", "Retribution"},
-	PRIEST = {"Discipline", "Holy", "Shadow"},
-	ROGUE = {"Assasination", "Combat", "Subtely"},
-	SHAMAN = {"Elemental", "Enhancement", "Resto"},
-	WARLOCK = {"Affliction", "Demonology", "Destruction"},
-	WARRIOR = {"Arms", "Fury", "Protection"},
-	DEATHKNIGHT = {"Blood", "Frost", "Unholy"},
+	DRUID = {["Tank"] = 1, ["Heal"] = 1, ["DPS"] = 1},
+	HUNTER = {["DPS"] = 1},
+	MAGE = {["DPS"] = 1},
+	PALADIN = {["Tank"] = 1, ["Heal"] = 1, ["DPS"] = 1},
+	PRIEST = {["Heal"] = 1, ["DPS"] = 1},
+	ROGUE = {["DPS"] = 1},
+	SHAMAN = {["Heal"] = 1, ["DPS"] = 1},
+	WARLOCK = {["DPS"] = 1},
+	WARRIOR = {["Tank"] = 1, ["DPS"] = 1},
+	DEATHKNIGHT = {["Tank"] = 1, ["DPS"] = 1},
 }
 
 KRC_Spells.mySpells = {
@@ -82,6 +85,16 @@ KRC_Spells.mySpells = {
 			["Cooldown"] = 30,
 			["Name"] = "Frost Trap",
 			["ShortName"] = "FT"
+		},
+		[19263] = {
+			["Cooldown"] = 90,
+			["Name"] = "Deterrence",
+			["ShortName"] = "Det"
+		},
+		[23989] = {
+			["Cooldown"] = 180,
+			["Name"] = "Readiness",
+			["ShortName"] = "Read"
 		}
 	},
 	MAGE = {
@@ -590,6 +603,18 @@ end
 
 function KRC_Spells:IsGuardianSpirit(aSpellID)
 	return aSpellID == self.myGuardianSpiritID
+end
+
+function KRC_Spells:IsReadiness(aSpellID)
+	return aSpellID == self.myReadinessID
+end
+
+function KRC_Spells:IsMisdirection(aSpellID)
+	return aSpellID == self.myMisdirectionID
+end
+
+function KRC_Spells:IsTricksOfTheTrade(aSpellID)
+	return aSpellID == self.myTricksOfTheTradeID
 end
 
 function KRC_Spells:CanCastSpell(aSpellID, aClass, aUnitID)

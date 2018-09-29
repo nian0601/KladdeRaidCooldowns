@@ -7,6 +7,7 @@
 
 embeds.xml
 
+KRC_Config_RaidScan.lua
 KRC_Config_Cooldowns.lua
 KRC_Config.lua
 KRC_Helpers.lua

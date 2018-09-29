@@ -4,11 +4,18 @@ local ourTopMostContainer = nil
 local function DrawGeneralGroupSettings(aContainer, anEvent, aClass)
 	aContainer:ReleaseChildren()
 
+	local growUpwards = KRC_Config.myGUI:Create("CheckBox")
+	growUpwards:SetValue(KRC_Display:IsGroupGrowUp(ourSelectedGroup))
+	growUpwards:SetLabel("Grow Bars Up")
+	growUpwards:SetCallback("OnValueChanged", function(widget, event, value)
+		KRC_Display:SetGroupGrowUp(ourSelectedGroup, value)
+	end)
+
 	local unlockBox = KRC_Config.myGUI:Create("CheckBox")
-	unlockBox:SetValue(KRC_Display:IsGroupLocked(ourSelectedGroup))
+	unlockBox:SetValue(KRC_Display:IsInLockedMode())
 	unlockBox:SetLabel("Unlock")
 	unlockBox:SetCallback("OnValueChanged", function(widget, event, value)
-		KRC_Display:ToggleGroupLock(ourSelectedGroup, value)
+		KRC_Display:SetLockedMode(value)
 	end)
 
 	local newGroupGroup = KRC_Config.myGUI:Create("SimpleGroup")
@@ -44,10 +51,49 @@ local function DrawGeneralGroupSettings(aContainer, anEvent, aClass)
 	end)
 	deleteGroup:AddChild(deleteEditBox)
 
+	aContainer:AddChild(growUpwards)
 	aContainer:AddChild(unlockBox)
 	aContainer:AddChild(newGroupGroup)
 	aContainer:AddChild(deleteGroup)
 	
+end
+
+local function CreateSpeccGroup(aClass)
+
+	if(aClass == "HUNTER" or aClass == "MAGE" or aClass == "ROGUE" or aClass == "WARLOCK") then
+		return nil
+	end
+
+	local speccs = KRC_Spells.mySpeccs[aClass]
+	local createBox = function(aString)
+		local box = KRC_Config.myGUI:Create("CheckBox")
+		--tank:SetValue(KRC_Display:IsGroupGrowUp(ourSelectedGroup))
+		box:SetLabel("Show " .. aString)
+		box:SetCallback("OnValueChanged", function(widget, event, value)
+			--KRC_Display:SetGroupGrowUp(ourSelectedGroup, value)
+		end)
+
+		return box;
+	end
+
+	local speccGroup = KRC_Config.myGUI:Create("SimpleGroup")
+	speccGroup:SetLayout("Flow")
+	speccGroup:SetFullWidth(true)
+	if(speccs["Tank"] ~= nil) then
+		speccGroup:AddChild(createBox("Tank"))
+	end
+
+	if(speccs["Heal"] ~= nil) then
+		speccGroup:AddChild(createBox("Heal"))
+	end
+
+	if(speccs["DPS"] ~= nil) then
+		speccGroup:AddChild(createBox("DPS"))
+	end
+
+	
+
+	return speccGroup
 end
 
 local function CreateEnableBox(aSpellID)
@@ -134,6 +180,17 @@ local function CreateAlwaysShowBox(aSpellID)
 	return alwaysShowBox
 end
 
+local function CreateSpellGroup(aSpellID)
+	local spellGroup = KRC_Config.myGUI:Create("SimpleGroup")
+	spellGroup:SetLayout("Flow")
+	spellGroup:SetFullWidth(true)
+
+	spellGroup:AddChild(CreateEnableBox(aSpellID))
+	spellGroup:AddChild(CreateAlwaysShowBox(aSpellID))
+
+	return spellGroup
+end
+
 local function DrawClassSettings(aContainer, anEvent, aClass)
 	aContainer:ReleaseChildren()
 
@@ -150,18 +207,13 @@ local function DrawClassSettings(aContainer, anEvent, aClass)
 		scrollFrame:SetLayout("Flow")
 		scrollFrame:SetFullWidth(true)
 
+		local speccGroup = CreateSpeccGroup(aClass)
+		if(speccGroup ~= nil) then
+			aContainer:AddChild(speccGroup)
+		end
+
 		for i, spellID in next, temp do
-
-			local spellGroup = KRC_Config.myGUI:Create("SimpleGroup")
-			spellGroup:SetLayout("Flow")
-			spellGroup:SetFullWidth(true)
-
-			local alwaysShowBox = CreateAlwaysShowBox(spellID)
-			local enableBox = CreateEnableBox(spellID)
-			spellGroup:AddChild(enableBox)
-			spellGroup:AddChild(alwaysShowBox)
-
-			scrollFrame:AddChild(spellGroup)
+			scrollFrame:AddChild(CreateSpellGroup(spellID))
 		end
 
 		aContainer:AddChild(scrollFrame)

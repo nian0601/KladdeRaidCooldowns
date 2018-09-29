@@ -130,6 +130,19 @@ function KRC_DataCollector:GetPaladinAura(aPaladinName)
 	return nil
 end
 
+function KRC_DataCollector:ResetHunterCDs(aCasterName)
+	local spells = KRC_Spells.mySpells["HUNTER"]
+
+	for spellID, spellData in pairs(spells) do 
+		local casterInfo = self.myData[spellID][aCasterName]
+		local isReadiness = KRC_Spells:IsReadiness(spellID)
+
+		if(casterInfo ~= nil and isReadiness == false) then
+			casterInfo.myRemainingCD = nil
+		end
+	end
+end
+
 function KRC_DataCollector:AddData(aCasterName, aCasterClass, aSpellID, aTarget)
 	-- This will be nil if we dont have any CD info for this spell, so just return in that case
 	local spellCD = KRC_Spells:GetSpellCD(aCasterName, aCasterClass, aSpellID)
@@ -166,6 +179,10 @@ function KRC_DataCollector:AddData(aCasterName, aCasterClass, aSpellID, aTarget)
 	if(KRC_Spells:IsGuardianSpirit(aSpellID)) then
 		casterData.myGuardianSpiritFaded = false
 	end
+
+	if(KRC_Spells:IsReadiness(aSpellID)) then
+		self:ResetHunterCDs(aCasterName)
+	end
 end
 
 function KRC_DataCollector:COMBAT_LOG_EVENT_UNFILTERED(aEventName, ...)
@@ -186,10 +203,14 @@ function KRC_DataCollector:COMBAT_LOG_EVENT_UNFILTERED(aEventName, ...)
 		end
 	end
 
+	local spellID, spellName, spellSchool = select(9, ...)
+	local _, casterClassID = GetPlayerInfoByGUID(casterGUID)
+	
 	local isSpellCast = string.find(eventType, "SPELL_")
 	if(isSpellCast == nil) then
 		return
 	end
+
 
 	local isAuraRemoval = eventType == "SPELL_AURA_REMOVED"
 	local isAuraApplied = eventType == "SPELL_AURA_APPLIED"
@@ -200,8 +221,13 @@ function KRC_DataCollector:COMBAT_LOG_EVENT_UNFILTERED(aEventName, ...)
 		return
 	end	
 
-	local spellID, spellName, spellSchool = select(9, ...)
-	local _, casterClassID = GetPlayerInfoByGUID(casterGUID)
+	if(KRC_Spells:IsMisdirection(spellID) or KRC_Spells:IsTricksOfTheTrade(spellID)) then
+		if(isAuraRemoval == true) then
+			self:AddData(casterName, casterClassID, spellID, targetName)
+		end
+		return
+	end
+
 
 	if(isSpellCastSuccess or isResurrection or isAuraApplied) then
 		self:AddData(casterName, casterClassID, spellID, targetName)
