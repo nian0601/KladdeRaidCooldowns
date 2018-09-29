@@ -2,7 +2,6 @@ TODO:
 - Add druid-enrage as tankcd
 - Add "Extra Information" that I added in old addon. Target of spell and Aura for Aura Mastery
 - Add PallyAura-tracker that old addon has
-- Once last bar expires the group doesnt shrink down into one line anymore, it stays a bit larger than neccessary
 - Add small spacing between spells
 - Fix spell-sorting. Class -> Spell -> CD
 
@@ -10,6 +9,7 @@ TODO:
 Version 1.3
 - We can now assign speccs to all raidmembers in a new menu in the config
 - Each group can also filter on speccs for each class, Example: "Only show spells from Paladin Tanks"
+- Removed extra space that appeared when the last bar of a group expired
 
 Version 1.2
 - Added Deterance and Readiness (readiness also resets all other hunter-cds)

@@ -167,8 +167,8 @@ function KRC_Display:CreateEmptyGroup(aGroupName)
 	mainFrame:SetScript("OnDragStart", mainFrame.StartMoving)
 	mainFrame:SetScript("OnDragStop", function(aWidget)
 		aWidget:StopMovingOrSizing()
-		KRC_Core.db.profile.myGroups[aGroupName].myBottomLeftX = aWidget:GetLeft() * UIParent:GetEffectiveScale()
-		KRC_Core.db.profile.myGroups[aGroupName].myBottomLeftY = aWidget:GetBottom() * UIParent:GetEffectiveScale()
+		KRC_Core.db.profile.myGroups[aGroupName].myBottomLeftX = aWidget:GetLeft()
+		KRC_Core.db.profile.myGroups[aGroupName].myBottomLeftY = aWidget:GetTop()
 	end)
 
 	mainFrame.myBackground = mainFrame:CreateTexture(nil, "LOW")
@@ -399,27 +399,32 @@ function KRC_Display:RepositionFramesInGroup(aGroup)
 		frameMovement = -frameMovement
 	end
 
+	
+
+
 	local numFrames = table.getn(aGroup.myFrames)
+	local width = 150
 	if(numFrames > 0) then
-		
-		local width = aGroup.myFrames[1]:GetWidth()
-		local height = numFrames * aGroup.myFrames[1]:GetHeight()
-		-- Account for the GroupLable
-		height = height + self.myTextHeight
-		-- Add a some extra padding
-		height = height + (barSpacing * numFrames) + 5
-		aGroup.myMainFrame:SetWidth(width)
-		aGroup.myMainFrame:SetHeight(height)
+		width = aGroup.myFrames[1]:GetWidth()
+	end
 
-		aGroup.myMainFrame.myBackground:SetWidth(width)
-		aGroup.myMainFrame.myBackground:SetHeight(height)
+	local height = self.myTextHeight * numFrames
 
-		aGroup.myMainFrame.myBackground:ClearAllPoints()
-		if(growUpwards == true) then
-			aGroup.myMainFrame.myBackground:SetPoint("BOTTOMLEFT", aGroup.myMainFrame, "TOPLEFT", 0, -self.myTextHeight - 5)
-		else
-			aGroup.myMainFrame.myBackground:SetPoint("TOPLEFT", aGroup.myMainFrame, "TOPLEFT", 0, 0)
-		end
+	-- Account for the GroupLable
+	height = height + self.myTextHeight
+	-- Add a some extra padding
+	height = height + (barSpacing * numFrames)
+	aGroup.myMainFrame:SetWidth(width)
+	aGroup.myMainFrame:SetHeight(height)
+
+	aGroup.myMainFrame.myBackground:SetWidth(width)
+	aGroup.myMainFrame.myBackground:SetHeight(height)
+
+	aGroup.myMainFrame.myBackground:ClearAllPoints()
+	if(growUpwards == true) then
+		aGroup.myMainFrame.myBackground:SetPoint("BOTTOMLEFT", aGroup.myMainFrame, "TOPLEFT", 0, -self.myTextHeight)
+	else
+		aGroup.myMainFrame.myBackground:SetPoint("TOPLEFT", aGroup.myMainFrame, "TOPLEFT", 0, 0)
 	end
 
 	-- We dont want to overlap with the group-label
