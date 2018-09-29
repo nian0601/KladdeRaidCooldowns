@@ -93,7 +93,7 @@ function KRC_Display:CreateEmptyGroup(aGroupName)
 	mainFrame:SetWidth(125)
 	mainFrame:SetHeight(self.myTextHeight + 5)
 	mainFrame:ClearAllPoints()
-	mainFrame:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", x, y)
+	mainFrame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", x, y)
 	mainFrame:RegisterForDrag("LeftButton")
 	mainFrame:SetScript("OnDragStart", mainFrame.StartMoving)
 	mainFrame:SetScript("OnDragStop", function(aWidget)
@@ -145,7 +145,7 @@ function KRC_Display:ApplyGroupSettings(aGroup, someSettings)
 
 	if (someSettings.myBottomLeftX ~= nil) then
 		aGroup.myMainFrame:ClearAllPoints()
-		aGroup.myMainFrame:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", someSettings.myBottomLeftX, someSettings.myBottomLeftY)
+		aGroup.myMainFrame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", someSettings.myBottomLeftX, someSettings.myBottomLeftY)
 	end
 end
 
@@ -278,21 +278,20 @@ end
 function KRC_Display:RepositionFramesInGroup(aGroup)
 	table.sort(aGroup.myFrames, CompareFrames)
 
-	for groupName, groupSettings in pairs(KRC_Core.db.profile.myGroups) do 
+	local numFrames = table.getn(aGroup.myFrames)
+
+	local groupSettings = nil
+	for groupName, dbGroupSettings in pairs(KRC_Core.db.profile.myGroups) do 
 		if(aGroup.myTitle == groupName) then
-			self:ApplyGroupSettings(aGroup, groupSettings)
+			groupSetting = dbGroupSettings
 		end
 	end
 
-	local numFrames = table.getn(aGroup.myFrames)
-
-	--aGroup.myMainFrame:ClearAllPoints()
-	--local x = KRC_Core.db.profile.myGroups[aGroup.myTitle].myBottomLeftX
-	--local y = KRC_Core.db.profile.myGroups[aGroup.myTitle].myBottomLeftY
-	--aGroup.myMainFrame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", x, y)
-
-	--aGroup.myMainFrame:ClearAllPoints()
-	--aGroup.myMainFrame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", someSettings.myBottomLeftX, someSettings.myBottomLeftY)
+	local barSpacing = 2
+	if(groupSettings ~= nil) then
+		--self:ApplyGroupSettings(aGroup, groupSettings)
+		barSpacing = groupSettings.myBarSpacing
+	end
 
 	if(numFrames > 0) then
 		
@@ -301,7 +300,7 @@ function KRC_Display:RepositionFramesInGroup(aGroup)
 		-- Account for the GroupLable
 		height = height + self.myTextHeight
 		-- Add a some extra padding
-		height = height + 5
+		height = height + (barSpacing * numFrames) + 5
 		aGroup.myMainFrame:SetWidth(width)
 		aGroup.myMainFrame:SetHeight(height)
 
@@ -311,13 +310,13 @@ function KRC_Display:RepositionFramesInGroup(aGroup)
 
 	-- We dont want to overlap with the group-label
 	local newY = -self.myTextHeight
-	newY = newY	+ 10
+	newY = newY	+ self.myTextHeight
 	for i = 1, numFrames do
 		local frame = aGroup.myFrames[i]
 
 		frame:ClearAllPoints()
 
-		newY = newY - 10
+		newY = newY - self.myTextHeight - barSpacing
 
 		frame:SetPoint("TOPLEFT", aGroup.myMainFrame, "TOPLEFT", 0, newY)
 	end

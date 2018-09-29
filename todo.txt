@@ -1,20 +1,23 @@
 TODO:
-- Groups grow weirdly. Ideal setup: You place the group-heading, and then that never moves, spells just grow downwards
-- Add menu where we can select either specc, or available spells for each raidmember. This also needs to be persisted
+- Need some way of determining which specc raidmembers have
+	- Either use gladius way of autodetecting
+	- Or add a menu where you can select the specc for each raidmember
+- Add white/black-listing option for each group, so we can choose which raidmembers or speccs appear in each group
+- Add Deterance
+- Add setting for making the groups grow upwards
+- Make unlock be persisted
 - Add "Extra Information" that I added in old addon. Target of spell and Aura for Aura Mastery
 - Add PallyAura-tracker that old addon has
-- Add Deterance
-- Fix raid-update bug. CDs wont recheck for availability until someone moves ppl in the grp. Atleast make it check once when joining. But there is no event for this, so need to do a "WasInRaid~=IsInRaid" thingy
+
+Version 1.1
+- Groups now grow down from the label, should be no more wierdness with it growing up sometimes
+- RaidScanning now properly works, every 10s we'll scan
 
 
 Version 1.0
-
-Groups:
 - Can create any number of groups and assign spells to them, spells can be either "Show On Cd" or "Show Always"
 - Can move groups around and the position is persisted
 - Groups grow down, kindof, its weird, they also grow up sometimes?? Needs to be fixed
-
-Spells:
 - Almost all spells that we care about are tracked, need to add deterance
 - All spells have short-names
 - We dont do any specc-checks, because blizzard wont let us. The plan is to add a menu where we manually can set specc, or available spells, per raid member (this should also be persisted)
