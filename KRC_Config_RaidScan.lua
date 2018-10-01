@@ -54,16 +54,16 @@ local function DrawClassSettings(aContainer, anEvent, aClass)
 	local speccs = KRC_Spells.mySpeccs[aClass]
 
 	local scrollFrame = KRC_Config.myGUI:Create("ScrollFrame")
-	scrollFrame:SetLayout("Fill")
+	scrollFrame:SetLayout("Flow")
 	scrollFrame:SetFullWidth(true)
 
 	local numRaidMembers = GetNumRaidMembers()
-	for i = 1, numRaidMembers do
+	for i = 1, MAX_RAID_MEMBERS do
 		local id = "raid" .. i
 		local name = UnitName(id)
 		local _, class = UnitClass(id)
 
-		if(class == aClass) then
+		if(name ~= nil and class == aClass) then
 			scrollFrame:AddChild(CreateSpeccButtons(name, aClass, speccs))
 		end
 	end

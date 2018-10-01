@@ -5,6 +5,9 @@ TODO:
 - Add small spacing between spells
 - Fix spell-sorting. Class -> Spell -> CD
 
+Version 1.4
+- Fixed raidscanner layout, now properly shows all raidmember (why the fuck cant you just use GetNumRaidMembers() blizzard???)
+- Optimization: DataScanner now only tries to track spells that we have listed in KRC_Spells.lua, which means we cut down the number of events we handle by A LOT.
 
 Version 1.3
 - We can now assign speccs to all raidmembers in a new menu in the config

@@ -202,12 +202,15 @@ function KRC_DataCollector:COMBAT_LOG_EVENT_UNFILTERED(aEventName, ...)
 			return
 		end
 	end
-
-	local spellID, spellName, spellSchool = select(9, ...)
-	local _, casterClassID = GetPlayerInfoByGUID(casterGUID)
 	
 	local isSpellCast = string.find(eventType, "SPELL_")
 	if(isSpellCast == nil) then
+		return
+	end
+
+	local spellID, spellName, spellSchool = select(9, ...)
+
+	if(KRC_Spells:IsSpellTracked(spellID) == false) then
 		return
 	end
 
@@ -221,6 +224,8 @@ function KRC_DataCollector:COMBAT_LOG_EVENT_UNFILTERED(aEventName, ...)
 		return
 	end	
 
+	local _, casterClassID = GetPlayerInfoByGUID(casterGUID)
+	
 	if(KRC_Spells:IsMisdirection(spellID) or KRC_Spells:IsTricksOfTheTrade(spellID)) then
 		if(isAuraRemoval == true) then
 			self:AddData(casterName, casterClassID, spellID, targetName)

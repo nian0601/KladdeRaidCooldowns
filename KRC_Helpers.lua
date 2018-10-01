@@ -1,8 +1,7 @@
 KRC_Helpers = {}
 
 function KRC_Helpers:UnitIsInOurRaidOrParty(aUnitName)
-	local numRaidMembers = GetNumRaidMembers()
-	for i = 1, numRaidMembers do
+	for i = 1, MAX_RAID_MEMBERS  do
 		local memberName = UnitName("raid" .. i)
 		if(memberName == aUnitName) then
 			return true
@@ -25,15 +24,12 @@ function KRC_Helpers:UnitIsInOurRaidOrParty(aUnitName)
 end
 
 function KRC_Helpers:GetUnitID(aUnitName)
-	local numRaidMembers = GetNumRaidMembers()
-	if(numRaidMembers > 0) then
-		for i = 1, MAX_RAID_MEMBERS  do
-			local id = "raid " .. i
-			local memberName = UnitName(id)
+	for i = 1, MAX_RAID_MEMBERS  do
+		local id = "raid " .. i
+		local memberName = UnitName(id)
 
-			if(memberName == aUnitName) then
-				return id
-			end
+		if(memberName == aUnitName) then
+			return id
 		end
 	end
 	

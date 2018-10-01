@@ -539,13 +539,11 @@ KRC_Spells.mySpells = {
 			["Cooldown"] = 90,
 			["Name"] = "Dancing Rune Weapon",
 			["ShortName"] = "RWep",
-			["TalentRequirement"] = "Blood"
 		},
 		[49206] = {
 			["Cooldown"] = 180,
 			["Name"] = "Summon Gargoyle",
 			["ShortName"] = "Garg",
-			["TalentRequirement"] = "Unholy"
 		},
 		[47476] = {
 			["Cooldown"] = 120,
@@ -561,19 +559,16 @@ KRC_Spells.mySpells = {
 			["Cooldown"] = 120,
 			["Name"] = "Unbreakable Armor",
 			["ShortName"] = "UA",
-			["TalentRequirement"] = "Frost"
 		},
 		[55233] = {
 			["Cooldown"] = 60,
 			["Name"] = "Vampiric Blood",
 			["ShortName"] = "VB",
-			["TalentRequirement"] = "Blood"
 		},
 		[49222] = {
 			["Cooldown"] = 120,
 			["Name"] = "Bone Shield",
 			["ShortName"] = "BS",
-			["TalentRequirement"] = "Unholy"
 		},
 		[47528] = {
 			["Cooldown"] = 10,
@@ -587,6 +582,14 @@ KRC_Spells.mySpells = {
 		}
 	},
 }
+
+KRC_Spells.myAllSpells = {}
+
+for className, classSpells in pairs(KRC_Spells.mySpells) do
+	for spellID, spellInfo in pairs(classSpells) do
+		KRC_Spells.myAllSpells[spellID] = 1
+	end
+end
 
 KRC_Spells.myTargetedSpells = {
 	[48477] = 600,  -- Rebirth
@@ -616,6 +619,10 @@ KRC_Spells.myPaladinAuras =
 	{ ["SpellID"] = 48945, ["Name"] = "Frost Resistance Aura"},
 	{ ["SpellID"] = 32223, ["Name"] = "Crusader Aura"}
 }
+
+function KRC_Spells:IsSpellTracked(aSpellID)
+	return self.myAllSpells[aSpellID] ~= nil
+end
 
 function KRC_Spells:GetSpellCD(aCasterName, aCasterClass, aSpellID)
 	-- We should check for CD-reducing talents here, thats why we pass in aCaster
