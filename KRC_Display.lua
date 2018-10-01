@@ -375,6 +375,10 @@ function KRC_Display:CreateFrameAndAddToGroup(aGroup, aSpellID, aCasterName, aCa
 end
 
 function KRC_Display:RemoveFrameFromGroup(aFrame, aFrameIndex, aGroup)
+	if(aFrameIndex == -1) then
+		return
+	end
+
 	aFrame:Hide()
 	table.insert(self.myFreeFrames, aFrame)
 	table.remove(aGroup.myFrames, aFrameIndex)
@@ -539,59 +543,62 @@ function KRC_Display:UpdateFrameProgress(aFrame, someCasterData, aShouldAlwaysSh
 	end
 end
 
-function KRC_Display:UpdateSpellDataInGroup(aSpellID, someSpellData, aGroup)
 
+function KRC_Display:UpdateSpellForCasterInGroup(aSpellID, aCasterName, someCasterData, aGroup)
+	if(aGroup.mySpells[aSpellID] == nil) then
+		return
+	end
+
+	local frame, frameIndex = self:FindFrameInGroup(aGroup, aSpellID, aCasterName)
 	local isEnabled = aGroup.mySpells[aSpellID].myEnabled
+
+	if(isEnabled == false) then
+		self:RemoveFrameFromGroup(frame, frameIndex, aGroup)
+		return
+	end
+
+	if(self:IsUnitValid(aCasterName, someCasterData) == false) then
+		self:RemoveFrameFromGroup(frame, frameIndex, aGroup)
+		return
+	end
+
+	if(self:CanUnitCastSpell(aCasterName, aSpellID, someCasterData) == false) then
+		self:RemoveFrameFromGroup(frame, frameIndex, aGroup)
+		return
+	end
+
+	if(self:ShouldGroupShowSpell(aCasterName, someCasterData.myClass, aSpellID, aGroup) == false) then
+		self:RemoveFrameFromGroup(frame, frameIndex, aGroup)
+		return
+	end
+
+	-- If the spell is on cooldown, or we should always show this spell then we require a frame,
+	-- which means we have to create one if we didnt have one allready
 	local shouldAlwaysShow = aGroup.mySpells[aSpellID].myAlwaysShow
+	local frameRequired = someCasterData.myRemainingCD ~= nil or shouldAlwaysShow
+	if (frame == nil and frameRequired == true) then
+		frame, frameIndex = self:CreateFrameAndAddToGroup(aGroup, aSpellID, aCasterName, someCasterData.myClass)
+	end
 
-	for casterName, casterData in pairs(someSpellData) do 
-		local frame, frameIndex = self:FindFrameInGroup(aGroup, aSpellID, casterName)
-
-		local casterIsValid = self:IsUnitValid(casterName, casterData)
-		local casterCanCastSpell = self:CanUnitCastSpell(casterName, aSpellID, casterData)
-		local shouldGroupShowSpell = self:ShouldGroupShowSpell(casterName, casterData.myClass, aSpellID, aGroup)
-		-- If we have a frame, but it has been disabled,
-		-- or the caster cannot cast the spell anymore, 
-		-- then we should remove the frame
-
-		local spellCannotBeShown = casterIsValid == false or casterCanCastSpell == false or shouldGroupShowSpell == false
-		if(spellCannotBeShown == true) then
-			if(frame ~= nil) then
-				self:DebugPrint("Removing " .. GetSpellInfo(aSpellID) .. " from " .. casterName .. ", it cannot be shown anymore")
-				self:RemoveFrameFromGroup(frame, frameIndex, aGroup)
-			end
+	if(frame ~= nil) then
+		if(frameRequired == false) then
+			self:DebugPrint("Removing " .. GetSpellInfo(aSpellID) .. " from " .. aCasterName .. ", the frame is not required anymore")
+			self:RemoveFrameFromGroup(frame, frameIndex, aGroup)
 		else
-			-- If the spell is on cooldown, or we should always show this spell then we require a frame,
-			-- which means we have to create one if we didnt have one allready
-			local frameRequired = casterData.myRemainingCD ~= nil or shouldAlwaysShow
-			if (frame == nil and frameRequired == true) then
-				frame, frameIndex = self:CreateFrameAndAddToGroup(aGroup, aSpellID, casterName, casterData.myClass)
-			end
-
-			if(frame ~= nil) then
-				if(frameRequired == false) then
-					self:DebugPrint("Removing " .. GetSpellInfo(aSpellID) .. " from " .. casterName .. ", the frame is not required anymore")
-					self:RemoveFrameFromGroup(frame, frameIndex, aGroup)
-				else
-					self:UpdateFrameProgress(frame, casterData, shouldAlwaysShow)
-				end
-			end
+			self:UpdateFrameProgress(frame, someCasterData, shouldAlwaysShow)
 		end
-		
 	end
 end
 
 function KRC_Display:Update()
 	for groupName, group in pairs(self.myGroups) do 
 		for spellID, spellData in pairs(KRC_DataCollector.myData) do
-			if (group.mySpells[spellID] ~= nil) then
-				self:UpdateSpellDataInGroup(spellID, spellData, group)
+			for casterName, casterData in pairs(spellData) do
+				self:UpdateSpellForCasterInGroup(spellID, casterName, casterData, group)
 			end
 		end
 	end
 end
-
-
 
 --
 -- Utilities
