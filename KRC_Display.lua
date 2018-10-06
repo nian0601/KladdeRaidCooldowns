@@ -113,18 +113,6 @@ function KRC_Display:InitializeGroupDBVariables(aGroupName)
 		settings.mySpells = {}
 	end
 
-	if (settings.mySpeccs == nil) then
-		settings.mySpeccs = {}
-
-		for class, speccInfo in pairs(KRC_Spells.mySpeccs) do
-			settings.mySpeccs[class] = {}
-
-			for speccName, active in pairs(speccInfo) do
-				settings.mySpeccs[class][speccName] = true	
-			end
-		end
-	end
-
 	if(settings.myGrowBarsUp == nil) then
 		settings.myGrowBarsUp = false
 	end
@@ -213,6 +201,8 @@ function KRC_Display:ApplyGroupSettings(aGroup, someSettings)
 			aGroup.mySpells[spellID] = {}
 			aGroup.mySpells[spellID].myEnabled = spellInfo.myEnabled
 			aGroup.mySpells[spellID].myAlwaysShow = spellInfo.myAlwaysShow
+
+			aGroup.mySpells[spellID].mySpeccs = {}
 		end
 	end
 
@@ -251,28 +241,55 @@ function KRC_Display:SetGroupGrowUp(aGroupName, aValue)
 	self:RepositionFramesInGroup(realGroup)
 end
 
-function KRC_Display:IsSpeccActiveForGroup(aGroupName, aClass, aSpecc)
-	local realGroup = self.myGroups[aGroupName]
-	if (realGroup == nil) then
-		return false
-	end
-
-	if(aSpecc == nil) then
-		return false
-	end
-
-	local groupSettings = self:GetGroupSettings(aGroupName)
-	return groupSettings.mySpeccs[aClass][aSpecc] == true
-end
-
 function KRC_Display:SetSpeccStatusForGroup(aGroupName, aClass, aSpecc, aStatus)
 	local realGroup = self.myGroups[aGroupName]
 	if (realGroup == nil) then
 		return
 	end
 
+	local classSpells = KRC_Spells.mySpells[aClass]
+	for spellID, spellInfo in pairs(classSpells) do
+		self:SetSpeccStatusForSpellInGroup(aGroupName, aClass, spellID, aSpecc, aStatus)
+	end
+end
+
+function KRC_Display:SetSpeccStatusForSpellInGroup(aGroupName, aClass, aSpellID, aSpecc, aStatus)
+	local realGroup = self.myGroups[aGroupName]
+	if (realGroup == nil) then
+		return
+	end
+
 	local groupSettings = self:GetGroupSettings(aGroupName)
-	groupSettings.mySpeccs[aClass][aSpecc] = aStatus
+	
+	if(groupSettings.mySpells[aSpellID] == nil) then
+		groupSettings.mySpells[aSpellID] = {}
+	end
+
+	if(groupSettings.mySpells[aSpellID].mySpeccs == nil) then
+		groupSettings.mySpells[aSpellID].mySpeccs = {}
+	end
+
+	groupSettings.mySpells[aSpellID].mySpeccs[aSpecc] = aStatus
+end
+
+function KRC_Display:IsSpeccActiveForSpellInGroup(aGroupName, aClass, aSpellID, aSpecc)
+	local realGroup = self.myGroups[aGroupName]
+	if (realGroup == nil) then
+		return false
+	end
+
+	local groupSettings = self:GetGroupSettings(aGroupName)
+	local spell = groupSettings.mySpells[aSpellID]
+	if(spell == nil) then
+		return false
+	end
+
+	local speccs = spell.mySpeccs
+	if(speccs == nil) then
+		return false
+	end
+
+	return speccs[aSpecc] == true
 end
 
 --
@@ -518,7 +535,7 @@ function KRC_Display:ShouldGroupShowSpell(aCasterName, aCasterClass, aSpellID, a
 		return false;
 	end
 
-	if (self:IsSpeccActiveForGroup(aGroup.myTitle, aCasterClass, casterSpecc) == false) then
+	if (self:IsSpeccActiveForSpellInGroup(aGroup.myTitle, aCasterClass, aSpellID, casterSpecc) == false) then
 		self:DebugPrint("Specc " .. casterSpecc .. " is not enabled in group " .. aGroup.myTitle .. ", hiding it.")
 		return false
 	end

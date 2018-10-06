@@ -26,12 +26,13 @@ KRC_DataCollector.myData = {}
 KRC_DataCollector.myPaladinAuras = {}
 KRC_DataCollector.myNumTicksSinceLastGroupScan = 0
 KRC_DataCollector.myEnableDebugPrinting = false
+KRC_DataCollector.myIsInCombat = false
 
 function KRC_DataCollector:OnInitialize()
 	self:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
-	--self:RegisterEvent("PARTY_MEMBERS_CHANGED", "ScanGroupForSpells")
-	--self:RegisterEvent("RAID_ROSTER_UPDATE", "ScanGroupForSpells")
-	--self:RegisterEvent("RAID_TARGET_UPDATE", "ScanGroupForSpells")
+	
+	self:RegisterEvent("PLAYER_REGEN_ENABLED")
+	self:RegisterEvent("PLAYER_REGEN_DISABLED")
 	
 
 	self:InitializeSpellsForPlayer("player")
@@ -47,6 +48,10 @@ end
 
 function KRC_DataCollector:InitializeSpellsForPlayer(aUnitID)
 	local name = UnitName(aUnitID)
+	if(name == nil) then
+		return
+	end
+
 	local _,class = UnitClass(aUnitID)
 
 	local spells = KRC_Spells.mySpells[class]
@@ -69,7 +74,7 @@ function KRC_DataCollector:InitializeSpellsForPlayer(aUnitID)
 end
 
 function KRC_DataCollector:ScanGroupForSpells()
-	local numRaidMembers = GetNumRaidMembers()
+	local numRaidMembers = MAX_RAID_MEMBERS
 	for i = 1, numRaidMembers do
 		self:InitializeSpellsForPlayer("raid" .. i)
 	end
@@ -96,7 +101,7 @@ end
 function KRC_DataCollector:Update()
 
 	self.myNumTicksSinceLastGroupScan = self.myNumTicksSinceLastGroupScan + 1
-	if(self.myNumTicksSinceLastGroupScan > 10) then
+	if(self.myNumTicksSinceLastGroupScan > 10 and self.myIsInCombat == false) then
 		self:ScanGroupForSpells()
 		self.myNumTicksSinceLastGroupScan = 0
 	end
@@ -159,13 +164,13 @@ function KRC_DataCollector:AddData(aCasterName, aCasterClass, aSpellID, aTarget)
 
 	if(self.myData[aSpellID][aCasterName] == nil) then
 		self.myData[aSpellID][aCasterName] = {}
+		self.myData[aSpellID][aCasterName] = KRC_Helpers:GetUnitID(aCasterName)
 	end
 
 	local casterData = self.myData[aSpellID][aCasterName]
 	casterData.myClass = aCasterClass
 	casterData.myRemainingCD = spellCD
 	casterData.myTarget = nil
-	casterData.myUnitID = KRC_Helpers:GetUnitID(aCasterName)
 	if(KRC_Spells:SpellIsTargeted(aSpellID)) then
 		casterData.myTarget = aTarget
 	end
@@ -241,4 +246,12 @@ function KRC_DataCollector:COMBAT_LOG_EVENT_UNFILTERED(aEventName, ...)
 	if(isAuraRemoval) then
 		-- Handle GuardianSpirit logic here
 	end
+end
+
+function KRC_DataCollector:PLAYER_REGEN_ENABLED(aEventName, ...)
+	self.myIsInCombat = false
+end
+
+function KRC_DataCollector:PLAYER_REGEN_DISABLED(aEventName, ...)
+	self.myIsInCombat = true
 end

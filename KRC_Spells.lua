@@ -83,6 +83,14 @@ KRC_Spells.mySpells = {
 			["Cooldown"] = 60,
 			["Name"] = "Barkskin",
 			["ShortName"] = "BS"
+		},
+		[5229] = {
+			["Cooldown"] = 60,
+			["Name"] = "Enrage",
+			["ShortName"] = "Enr",
+			["TalentRequirement"] = {
+				["Tank"] = 1
+			}
 		}
 	},
 	HUNTER = {

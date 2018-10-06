@@ -58,21 +58,24 @@ local function DrawGeneralGroupSettings(aContainer, anEvent, aClass)
 	
 end
 
-local function CreateSpeccGroup(aClass)
-
-	if(aClass == "HUNTER" or aClass == "MAGE" or aClass == "ROGUE" or aClass == "WARLOCK") then
+local function CreateSpeccGroup(aScrollFrame, aClass, someSpeccBoxes)
+	local speccs = KRC_Spells.mySpeccs[aClass]
+	if(speccs == nil) then
 		return nil
 	end
 
-	local speccs = KRC_Spells.mySpeccs[aClass]
+	local speccsHeading = KRC_Config.myGUI:Create("Heading")
+	speccsHeading:SetText("Set Spec-value for all spells (Toggles all specc-buttons below)")
+	speccsHeading:SetFullWidth(true)
+	aScrollFrame:AddChild(speccsHeading)
+
+
 	local createBox = function(aString)
 		local box = KRC_Config.myGUI:Create("CheckBox")
-		box:SetValue(KRC_Display:IsSpeccActiveForGroup(ourSelectedGroup, aClass, aString))
-		box:SetLabel("Show " .. aString)
-		box:SetCallback("OnValueChanged", function(widget, event, value)
-			KRC_Display:SetSpeccStatusForGroup(ourSelectedGroup, aClass, aString, value)
-		end)
-
+		box:SetValue(false)
+		box:SetLabel(aString)
+		box:SetWidth(60)
+		box:SetUserData("specc", aString)
 		return box;
 	end
 
@@ -81,10 +84,12 @@ local function CreateSpeccGroup(aClass)
 	speccGroup:SetFullWidth(true)
 
 	for specc, active in pairs(speccs) do
-		speccGroup:AddChild(createBox(specc))
+		local box = createBox(specc)
+		speccGroup:AddChild(box)
+		someSpeccBoxes[specc] = box
 	end
 
-	return speccGroup
+	aScrollFrame:AddChild(speccGroup)
 end
 
 local function CreateEnableBox(aSpellID)
@@ -139,7 +144,7 @@ local function CreateAlwaysShowBox(aSpellID)
 	if(dbGroup.mySpells[aSpellID] ~= nil) then
 		alwaysShowBox:SetValue(dbGroup.mySpells[aSpellID].myAlwaysShow)
 	end
-
+	alwaysShowBox:SetWidth(120)
 	alwaysShowBox:SetUserData("spellID", aSpellID)
 	alwaysShowBox:SetUserData("group", ourSelectedGroup)
 	alwaysShowBox:SetCallback("OnValueChanged", function(widget, event, value)
@@ -171,15 +176,55 @@ local function CreateAlwaysShowBox(aSpellID)
 	return alwaysShowBox
 end
 
-local function CreateSpellGroup(aSpellID)
-	local spellGroup = KRC_Config.myGUI:Create("SimpleGroup")
-	spellGroup:SetLayout("Flow")
-	spellGroup:SetFullWidth(true)
+local function CreateSpellGroup(aScrollFrame, aClass, someSpellSpeccBoxes)
+	-- Insert a heading first, to get a separationg between the Specc-boxes and the spells
+	local spellsHeading = KRC_Config.myGUI:Create("Heading")
+	spellsHeading:SetText("Spells")
+	spellsHeading:SetFullWidth(true)
+	aScrollFrame:AddChild(spellsHeading)
 
-	spellGroup:AddChild(CreateEnableBox(aSpellID))
-	spellGroup:AddChild(CreateAlwaysShowBox(aSpellID))
+	-- The function for creating the Specc-filters for each spell
+	local createSpeccBox = function(aString, aSpellID)
+		local box = KRC_Config.myGUI:Create("CheckBox")
+		box:SetValue(KRC_Display:IsSpeccActiveForSpellInGroup(ourSelectedGroup, aClass, aSpellID, aString))
+		box:SetLabel(aString)
 
-	return spellGroup
+		box:SetCallback("OnValueChanged", function(widget, event, value)
+			KRC_Display:Print("OnValueChanged: " .. GetSpellInfo(aSpellID))
+			KRC_Display:SetSpeccStatusForSpellInGroup(ourSelectedGroup, aClass, aSpellID, aString, value)
+		end)
+		box:SetWidth(60)
+
+		table.insert(someSpellSpeccBoxes[aString], box)
+		return box;
+	end
+
+	-- Collapse all spells for this class into a more compact array instead of table
+	local classSpells = KRC_Spells.mySpells[aClass]
+	local temp = {}
+	for spellID, spellInfo in pairs(classSpells) do
+		temp[#temp + 1] = spellID
+	end
+
+	for i, spellID in next, temp do
+		local spellGroup = KRC_Config.myGUI:Create("SimpleGroup")
+		spellGroup:SetLayout("Flow")
+		spellGroup:SetFullWidth(true)
+
+		spellGroup:AddChild(CreateEnableBox(spellID))
+		spellGroup:AddChild(CreateAlwaysShowBox(spellID))
+
+		local speccs = KRC_Spells.mySpeccs[aClass]
+		for specc, active in pairs(speccs) do
+			if(someSpellSpeccBoxes[specc] == nil) then
+				someSpellSpeccBoxes[specc] = {}
+			end
+
+			spellGroup:AddChild(createSpeccBox(specc, spellID))
+		end
+
+		aScrollFrame:AddChild(spellGroup)
+	end
 end
 
 local function DrawClassSettings(aContainer, anEvent, aClass)
@@ -188,35 +233,28 @@ local function DrawClassSettings(aContainer, anEvent, aClass)
 	if(aClass == "GENERAL") then
 		DrawGeneralGroupSettings(aContainer, anEvent, aClass)
 	else
-		local classSpells = KRC_Spells.mySpells[aClass]
-		local temp = {}
-		for spellID, spellInfo in pairs(classSpells) do
-			temp[#temp + 1] = spellID
-		end
-
 		local scrollFrame = KRC_Config.myGUI:Create("ScrollFrame")
 		scrollFrame:SetLayout("Flow")
 		scrollFrame:SetFullWidth(true)
 		scrollFrame:SetFullHeight(true)
 
-		local speccGroup = CreateSpeccGroup(aClass)
-		if(speccGroup ~= nil) then
+		local speccBoxes = {}
+		CreateSpeccGroup(scrollFrame, aClass, speccBoxes)
 
-			local speccsHeading = KRC_Config.myGUI:Create("Heading")
-			speccsHeading:SetText("Speccs")
-			speccsHeading:SetFullWidth(true)
-			scrollFrame:AddChild(speccsHeading)
+		local spellSpeccBoxes = {}
+		CreateSpellGroup(scrollFrame, aClass, spellSpeccBoxes)
 
-			scrollFrame:AddChild(speccGroup)
+		local function classWideSpeccCallback(widget, event, value)
+			local specc = widget:GetUserData("specc")
+			for i = 1, table.getn(spellSpeccBoxes[specc]) do
+				spellSpeccBoxes[specc][i]:SetValue(value)
+			end
+
+			KRC_Display:SetSpeccStatusForGroup(ourSelectedGroup, aClass, specc, value)
 		end
 
-		local spellsHeading = KRC_Config.myGUI:Create("Heading")
-		spellsHeading:SetText("Spells")
-		spellsHeading:SetFullWidth(true)
-		scrollFrame:AddChild(spellsHeading)
-
-		for i, spellID in next, temp do
-			scrollFrame:AddChild(CreateSpellGroup(spellID))
+		for specc, box in pairs(speccBoxes) do
+			box:SetCallback("OnValueChanged", classWideSpeccCallback)
 		end
 
 		aContainer:AddChild(scrollFrame)

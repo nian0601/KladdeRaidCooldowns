@@ -1,9 +1,23 @@
 TODO:
-- Add druid-enrage as tankcd
 - Add "Extra Information" that I added in old addon. Target of spell and Aura for Aura Mastery
 - Add PallyAura-tracker that old addon has
 - Add small spacing between spells
 - Fix spell-sorting. Class -> Spell -> CD
+- Add option to hide a group, without having to delete it
+- Ankh, Soulstone and Ardent Defender is not being tracked properly
+- Fix the slightly off sizing-issue (when a group is empty the BG gows a bit furter down than when there is one or more bars in the group)
+
+Performance:
+- Add option to only track spells that should be shown in a group, right now we're always tracking all spells listed in KRC_Spells.lua, even if they are not being shown in any group.
+Having it that way lets us properly show CDs if we decide to enable a spell that had been used while it wasnt shown, but it takes a bit more performance
+
+
+Version 1.5
+- Added enrage for druidtanks
+- Changed RaidScanning to only run while we are not in combat
+- RaidScanning now uses MAX_NUM_RAID_MEMBERS instead of GetNumRaidMembers() when assigning UnitIDs, should hopefully end up with less (none?) invalid IDs, which was causing certain CDs to be not be shown for ~10s
+- We can now specify per spell which speccs that should show it (only show Divine Protection from tanks for example)
+
 
 Version 1.4
 - Fixed raidscanner layout, now properly shows all raidmember (why the fuck cant you just use GetNumRaidMembers() blizzard???)
