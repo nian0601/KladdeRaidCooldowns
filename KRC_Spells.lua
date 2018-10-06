@@ -91,6 +91,14 @@ KRC_Spells.mySpells = {
 			["TalentRequirement"] = {
 				["Tank"] = 1
 			}
+		},
+		[22842] = {
+			["Cooldown"] = 180,
+			["Name"] = "Frenzied Regeneration",
+			["ShortName"] = "FR",
+			["TalentRequirement"] = {
+				["Tank"] = 1
+			}
 		}
 	},
 	HUNTER = {

@@ -1,16 +1,20 @@
 TODO:
 - Add "Extra Information" that I added in old addon. Target of spell and Aura for Aura Mastery
 - Add PallyAura-tracker that old addon has
-- Add small spacing between spells
 - Fix spell-sorting. Class -> Spell -> CD
-- Add option to hide a group, without having to delete it
 - Ankh, Soulstone and Ardent Defender is not being tracked properly
-- Fix the slightly off sizing-issue (when a group is empty the BG gows a bit furter down than when there is one or more bars in the group)
 
 Performance:
 - Add option to only track spells that should be shown in a group, right now we're always tracking all spells listed in KRC_Spells.lua, even if they are not being shown in any group.
 Having it that way lets us properly show CDs if we decide to enable a spell that had been used while it wasnt shown, but it takes a bit more performance
 
+
+
+Version 1.6
+- Added Frenzied Regeneration for druidtanks
+- Added option to specify spacing between bars, and extra spacing between spells
+- Might have fixed the annoying sizing-issue, where it looked like groups were moving slightly when going from empty to showing 1 bar
+- Its now possible to hide groups. Hidden groups will do 0 processing, so will not consume any CPU-time, but will still consume memory
 
 Version 1.5
 - Added enrage for druidtanks

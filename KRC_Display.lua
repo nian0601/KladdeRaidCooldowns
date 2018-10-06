@@ -73,7 +73,7 @@ function KRC_Display:SetLockedMode(aStatus)
 	KRC_Core.db.profile.myIsLocked = aStatus
 
 	for groupName, group in pairs(self.myGroups) do 
-		self:SetGroupLockedStatus(group, aStatus)
+		self:SetGroupLockedStatus(groupName, aStatus)
 	end
 end
 
@@ -117,12 +117,20 @@ function KRC_Display:InitializeGroupDBVariables(aGroupName)
 		settings.myGrowBarsUp = false
 	end
 
-	if(settings.myBarSpacing == nil) then
-		settings.myBarSpacing = 2
+	if(settings.myGeneralSpacing == nil) then
+		settings.myGeneralSpacing = 2
+	end
+
+	if(settings.mySpellSpacing == nil) then
+		settings.mySpellSpacing = 0
 	end
 
 	if(settings.myIsLocked == nil) then
 		settings.myIsLocked = true
+	end
+
+	if(settings.myIsHidden == nil) then
+		settings.myIsHidden = false
 	end
 end
 
@@ -211,12 +219,23 @@ function KRC_Display:ApplyGroupSettings(aGroup, someSettings)
 		aGroup.myMainFrame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", someSettings.myBottomLeftX, someSettings.myBottomLeftY)
 	end
 
-	self:SetGroupLockedStatus(aGroup, KRC_Core.db.profile.myIsLocked)
+	if(someSettings.myIsHidden ~= nil) then
+		self:SetGroupIsHidden(aGroup.myTitle, someSettings.myIsHidden)
+	end	
+
+	self:SetGroupLockedStatus(aGroup.myTitle, KRC_Core.db.profile.myIsLocked)
+	
+	self:RepositionFramesInGroup(aGroup)
 end
 
-function KRC_Display:SetGroupLockedStatus(aGroup, aStatus)
-	aGroup.myMainFrame:SetMovable(aStatus)
-	aGroup.myMainFrame:EnableMouse(aStatus)
+function KRC_Display:SetGroupLockedStatus(aGroupName, aStatus)
+	local realGroup = self.myGroups[aGroupName]
+	if (realGroup == nil) then
+		return
+	end
+
+	realGroup.myMainFrame:SetMovable(aStatus)
+	realGroup.myMainFrame:EnableMouse(aStatus)
 end
 
 function KRC_Display:IsGroupGrowUp(aGroupName)
@@ -290,6 +309,73 @@ function KRC_Display:IsSpeccActiveForSpellInGroup(aGroupName, aClass, aSpellID, 
 	end
 
 	return speccs[aSpecc] == true
+end
+
+function KRC_Display:GetGroupGeneralSpacing(aGroupName)
+	local realGroup = self.myGroups[aGroupName]
+	if (realGroup == nil) then
+		return false
+	end
+
+	local groupSettings = self:GetGroupSettings(aGroupName)
+	return groupSettings.myGeneralSpacing
+end
+
+function KRC_Display:SetGroupGeneralSpacing(aGroupName, aValue)
+	local realGroup = self.myGroups[aGroupName]
+	if (realGroup == nil) then
+		return false
+	end
+
+	local groupSettings = self:GetGroupSettings(aGroupName)
+	groupSettings.myGeneralSpacing = aValue
+	self:RepositionFramesInGroup(realGroup)
+end
+
+function KRC_Display:GetGroupSpellSpacing(aGroupName)
+	local realGroup = self.myGroups[aGroupName]
+	if (realGroup == nil) then
+		return false
+	end
+
+	local groupSettings = self:GetGroupSettings(aGroupName)
+	return groupSettings.mySpellSpacing
+end
+
+function KRC_Display:SetGroupSpellSpacing(aGroupName, aValue)
+	local realGroup = self.myGroups[aGroupName]
+	if (realGroup == nil) then
+		return false
+	end
+
+	local groupSettings = self:GetGroupSettings(aGroupName)
+	groupSettings.mySpellSpacing = aValue
+	self:RepositionFramesInGroup(realGroup)
+end
+
+function KRC_Display:IsGroupHidden(aGroupName)
+	local realGroup = self.myGroups[aGroupName]
+	if (realGroup == nil) then
+		return false
+	end
+
+	local groupSettings = self:GetGroupSettings(aGroupName)
+	return groupSettings.myIsHidden
+end
+
+function KRC_Display:SetGroupIsHidden(aGroupName, aValue)
+	local realGroup = self.myGroups[aGroupName]
+	if (realGroup == nil) then
+		return false
+	end
+
+	local groupSettings = self:GetGroupSettings(aGroupName)
+	groupSettings.myIsHidden = aValue
+	if(aValue == true) then
+		realGroup.myMainFrame:Hide()
+	else
+		realGroup.myMainFrame:Show()
+	end
 end
 
 --
@@ -408,33 +494,47 @@ function KRC_Display:RepositionFramesInGroup(aGroup)
 
 	local groupSettings = self:GetGroupSettings(aGroup.myTitle)
 
-	local barSpacing = 2
+	local generalSpacing = 2
+	local spellSpacing = 2
 	local growUpwards = false
 	if(groupSettings ~= nil) then
-		barSpacing = groupSettings.myBarSpacing
+		generalSpacing = groupSettings.myGeneralSpacing
+		spellSpacing = groupSettings.mySpellSpacing
 		growUpwards = groupSettings.myGrowBarsUp
 	end
 
-	local frameMovement = barSpacing + self.myTextHeight
+	local frameMovement = generalSpacing + self.myTextHeight
 	if(growUpwards == true) then
 		frameMovement = -frameMovement
+		spellSpacing = -spellSpacing
 	end
 
-	
-
-
+	local newY = 0
+	local prevSpell = nil
 	local numFrames = table.getn(aGroup.myFrames)
+
+	for i = 1, numFrames do
+		local frame = aGroup.myFrames[i]
+
+		frame:ClearAllPoints()
+
+		newY = newY - frameMovement
+
+		if(prevSpell ~= nil and prevSpell ~= frame.mySpellID) then
+			newY = newY - spellSpacing
+		end
+
+		prevSpell = frame.mySpellID
+
+		frame:SetPoint("TOPLEFT", aGroup.myMainFrame, "TOPLEFT", 0, newY)
+	end
+
 	local width = 150
+	local height = math.abs(newY) + self.myTextHeight
 	if(numFrames > 0) then
 		width = aGroup.myFrames[1]:GetWidth()
 	end
 
-	local height = self.myTextHeight * numFrames
-
-	-- Account for the GroupLable
-	height = height + self.myTextHeight
-	-- Add a some extra padding
-	height = height + (barSpacing * numFrames)
 	aGroup.myMainFrame:SetWidth(width)
 	aGroup.myMainFrame:SetHeight(height)
 
@@ -446,19 +546,6 @@ function KRC_Display:RepositionFramesInGroup(aGroup)
 		aGroup.myMainFrame.myBackground:SetPoint("BOTTOMLEFT", aGroup.myMainFrame, "TOPLEFT", 0, -self.myTextHeight)
 	else
 		aGroup.myMainFrame.myBackground:SetPoint("TOPLEFT", aGroup.myMainFrame, "TOPLEFT", 0, 0)
-	end
-
-	-- We dont want to overlap with the group-label
-	local newY = -self.myTextHeight
-	newY = newY	+ self.myTextHeight
-	for i = 1, numFrames do
-		local frame = aGroup.myFrames[i]
-
-		frame:ClearAllPoints()
-
-		newY = newY - frameMovement
-
-		frame:SetPoint("TOPLEFT", aGroup.myMainFrame, "TOPLEFT", 0, newY)
 	end
 end
 
@@ -609,9 +696,11 @@ end
 
 function KRC_Display:Update()
 	for groupName, group in pairs(self.myGroups) do 
-		for spellID, spellData in pairs(KRC_DataCollector.myData) do
-			for casterName, casterData in pairs(spellData) do
-				self:UpdateSpellForCasterInGroup(spellID, casterName, casterData, group)
+		if(self:IsGroupHidden(groupName) == false) then
+			for spellID, spellData in pairs(KRC_DataCollector.myData) do
+				for casterName, casterData in pairs(spellData) do
+					self:UpdateSpellForCasterInGroup(spellID, casterName, casterData, group)
+				end
 			end
 		end
 	end

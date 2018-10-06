@@ -1,22 +1,70 @@
 local ourSelectedGroup = nil
 local ourTopMostContainer = nil
 
-local function DrawGeneralGroupSettings(aContainer, anEvent, aClass)
-	aContainer:ReleaseChildren()
-
-	local growUpwards = KRC_Config.myGUI:Create("CheckBox")
-	growUpwards:SetValue(KRC_Display:IsGroupGrowUp(ourSelectedGroup))
-	growUpwards:SetLabel("Grow Bars Up")
-	growUpwards:SetCallback("OnValueChanged", function(widget, event, value)
-		KRC_Display:SetGroupGrowUp(ourSelectedGroup, value)
-	end)
+local function CreateGeneralGroup(aContainer)
+	local generalHeading = KRC_Config.myGUI:Create("Heading")
+	generalHeading:SetText("General")
+	generalHeading:SetFullWidth(true)
 
 	local unlockBox = KRC_Config.myGUI:Create("CheckBox")
 	unlockBox:SetValue(KRC_Display:IsInLockedMode())
 	unlockBox:SetLabel("Unlock")
+	unlockBox:SetWidth(100)
 	unlockBox:SetCallback("OnValueChanged", function(widget, event, value)
 		KRC_Display:SetLockedMode(value)
 	end)
+
+	local hideGroupBox = KRC_Config.myGUI:Create("CheckBox")
+	hideGroupBox:SetValue(KRC_Display:IsGroupHidden(ourSelectedGroup))
+	hideGroupBox:SetLabel("Hide Group")
+	hideGroupBox:SetWidth(100)
+	hideGroupBox:SetCallback("OnValueChanged", function(widget, event, value)
+		KRC_Display:SetGroupIsHidden(ourSelectedGroup, value)
+	end)
+
+	aContainer:AddChild(generalHeading)
+	aContainer:AddChild(unlockBox)
+	aContainer:AddChild(hideGroupBox)
+end
+
+local function CreatePositioningGroup(aContainer)
+	local positioningHeading = KRC_Config.myGUI:Create("Heading")
+	positioningHeading:SetText("Positioning")
+	positioningHeading:SetFullWidth(true)
+
+	local growUpwards = KRC_Config.myGUI:Create("CheckBox")
+	growUpwards:SetValue(KRC_Display:IsGroupGrowUp(ourSelectedGroup))
+	growUpwards:SetLabel("Grow Bars Up")
+	growUpwards:SetWidth(120)
+	growUpwards:SetCallback("OnValueChanged", function(widget, event, value)
+		KRC_Display:SetGroupGrowUp(ourSelectedGroup, value)
+	end)
+
+	local generalSpacingSlider = KRC_Config.myGUI:Create("Slider")
+	generalSpacingSlider:SetValue(KRC_Display:GetGroupGeneralSpacing(ourSelectedGroup))
+	generalSpacingSlider:SetLabel("Spacing Between Bars")
+	generalSpacingSlider:SetCallback("OnValueChanged", function(widget, event, value)
+		KRC_Display:SetGroupGeneralSpacing(ourSelectedGroup, value)
+	end)
+
+	local spellSpacingSlider = KRC_Config.myGUI:Create("Slider")
+	spellSpacingSlider:SetValue(KRC_Display:GetGroupSpellSpacing(ourSelectedGroup))
+	spellSpacingSlider:SetLabel("Spacing Between Spells")
+	spellSpacingSlider:SetCallback("OnValueChanged", function(widget, event, value)
+		KRC_Display:SetGroupSpellSpacing(ourSelectedGroup, value)
+	end)
+
+
+	aContainer:AddChild(positioningHeading)
+	aContainer:AddChild(growUpwards)
+	aContainer:AddChild(generalSpacingSlider)
+	aContainer:AddChild(spellSpacingSlider)
+end
+
+local function CreateAddAndDeleteExitBoxes(aContainer)
+	local addDeleteHeading = KRC_Config.myGUI:Create("Heading")
+	addDeleteHeading:SetText("Add or Delete Group")
+	addDeleteHeading:SetFullWidth(true)
 
 	local newGroupGroup = KRC_Config.myGUI:Create("SimpleGroup")
 	newGroupGroup:SetFullWidth(true)
@@ -51,11 +99,24 @@ local function DrawGeneralGroupSettings(aContainer, anEvent, aClass)
 	end)
 	deleteGroup:AddChild(deleteEditBox)
 
-	aContainer:AddChild(growUpwards)
-	aContainer:AddChild(unlockBox)
+	aContainer:AddChild(addDeleteHeading)
 	aContainer:AddChild(newGroupGroup)
 	aContainer:AddChild(deleteGroup)
+end
+
+local function DrawGeneralGroupSettings(aContainer, anEvent, aClass)
+	aContainer:ReleaseChildren()
 	
+	local scrollFrame = KRC_Config.myGUI:Create("ScrollFrame")
+	scrollFrame:SetLayout("Flow")
+	scrollFrame:SetFullWidth(true)
+	scrollFrame:SetFullHeight(true)
+
+	CreateGeneralGroup(scrollFrame)
+	CreatePositioningGroup(scrollFrame)
+	CreateAddAndDeleteExitBoxes(scrollFrame)
+
+	aContainer:AddChild(scrollFrame)
 end
 
 local function CreateSpeccGroup(aScrollFrame, aClass, someSpeccBoxes)

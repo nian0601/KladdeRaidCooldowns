@@ -30,8 +30,8 @@ function KRC_Config:OnEnable()
 		tabGroup:SetTabs(
 		{
 			{ text="Cooldowns", value="cooldowns" },
-			{ text="Pally Auras", value="pally_auras" },
-			{ text="Speccs", value="speccs" }
+			{ text="Speccs", value="speccs" },
+			{ text="Pally Auras", value="pally_auras" }
 		})
 		tabGroup:SetCallback("OnGroupSelected", SelectGroup)
 		tabGroup:SelectTab("cooldowns")
