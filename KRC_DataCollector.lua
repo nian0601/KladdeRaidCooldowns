@@ -88,12 +88,13 @@ end
 function KRC_DataCollector:UpdatePaladinAuras()
 	local cachedAuras = KRC_Spells.myPaladinAuras
 	for i = 1, 7 do
-		local name,_,_,_,_,_,_, source = UnitBuff("player", cachedAuras[i].Name)
+		local auraName = cachedAuras[i]["Name"]
+		local name,_,_,_,_,_,_, source = UnitBuff("player", auraName)
 		if (name ~= nil) then
 			local sourceName = UnitName(source)
-			self.myPaladinAuras[cachedAuras[i].Name] = sourceName
+			self.myPaladinAuras[auraName] = sourceName
 		else
-			self.myPaladinAuras[cachedAuras[i].Name] = nil
+			self.myPaladinAuras[auraName] = nil
 		end
 	end
 end
@@ -113,8 +114,9 @@ function KRC_DataCollector:Update()
 			if(casterData.myRemainingCD ~= nil) then
 				casterData.myRemainingCD = casterData.myRemainingCD - 1
 				self:DebugPrint("CD On " .. GetSpellInfo(spellID) .. ": " .. casterData.myRemainingCD)
-				if (casterData.myRemainingCD < 0) then
+				if (casterData.myRemainingCD ~= nil and casterData.myRemainingCD < 0) then
 					casterData.myRemainingCD = nil
+					casterData.myHasNewData = true
 				end
 			end
 		end
@@ -144,6 +146,7 @@ function KRC_DataCollector:ResetHunterCDs(aCasterName)
 
 		if(casterInfo ~= nil and isReadiness == false) then
 			casterInfo.myRemainingCD = nil
+			casterInfo.myHasNewData = true
 		end
 	end
 end
@@ -168,6 +171,7 @@ function KRC_DataCollector:AddData(aCasterName, aCasterClass, aSpellID, aTarget)
 	end
 
 	local casterData = self.myData[aSpellID][aCasterName]
+	casterData.myHasNewData = true
 	casterData.myClass = aCasterClass
 	casterData.myRemainingCD = spellCD
 	casterData.myTarget = nil
@@ -239,12 +243,8 @@ function KRC_DataCollector:COMBAT_LOG_EVENT_UNFILTERED(aEventName, ...)
 	end
 
 
-	if(isSpellCastSuccess or isResurrection or isAuraApplied) then
+	if(isSpellCastSuccess or isResurrection or isAuraApplied or isAuraRemoval) then
 		self:AddData(casterName, casterClassID, spellID, targetName)
-	end
-
-	if(isAuraRemoval) then
-		-- Handle GuardianSpirit logic here
 	end
 end
 

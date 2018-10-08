@@ -132,16 +132,29 @@ function KRC_Display:InitializeGroupDBVariables(aGroupName)
 	if(settings.myIsHidden == nil) then
 		settings.myIsHidden = false
 	end
+
+	if(settings.myShouldShowExtraInfo == nil) then
+		settings.myShouldShowExtraInfo = false
+	end
+
+	if(settings.myCasterLableWidth == nil) then
+		settings.myCasterLableWidth = 50
+		settings.mySpellLableWidth = 45
+		settings.myCooldownLableWidth = 40
+	end
 end
 
 function KRC_Display:CreateEmptyGroup(aGroupName)
-	self:InitializeGroupDBVariables(aGroupName)
-		
+	if(aGroupName == nil or aGroupName == "") then
+		return false
+	end
 
 	if(self.myGroups[aGroupName] ~= nil) then
 		-- We allready have a group with this name.. output error?
-		return
+		return false
 	end
+
+	self:InitializeGroupDBVariables(aGroupName)
 
 	self.myGroups[aGroupName] = {}
 	local group = self.myGroups[aGroupName]
@@ -182,10 +195,15 @@ function KRC_Display:CreateEmptyGroup(aGroupName)
 	mainFrame.myLabel.Text:SetText("[" .. aGroupName .. "]")
 
 	self:ApplyGroupSettings(group, KRC_Core.db.profile.myGroups[aGroupName])
+	return true
 end
 
 function KRC_Display:DeleteGroup(aGroupName)
-	local realGroup = self.myGroups[aGroup]
+	local realGroup = self.myGroups[aGroupName]
+	if(realGroup == nil) then
+		return false
+	end
+
 	if (realGroup ~= nil) then
 		while(table.getn(realGroup.myFrames) > 0) do
 			self:RemoveFrameFromGroup(realGroup.myFrames[1], 1, realGroup)
@@ -196,6 +214,8 @@ function KRC_Display:DeleteGroup(aGroupName)
 	self.myGroups[aGroupName].myMainFrame = nil
 	self.myGroups[aGroupName] = nil
 	KRC_Core.db.profile.myGroups[aGroupName] = nil
+
+	return true
 end
 
 function KRC_Display:GetGroupSettings(aGroupName)
@@ -212,11 +232,6 @@ function KRC_Display:ApplyGroupSettings(aGroup, someSettings)
 
 			aGroup.mySpells[spellID].mySpeccs = {}
 		end
-	end
-
-	if (someSettings.myBottomLeftX ~= nil) then
-		aGroup.myMainFrame:ClearAllPoints()
-		aGroup.myMainFrame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", someSettings.myBottomLeftX, someSettings.myBottomLeftY)
 	end
 
 	if(someSettings.myIsHidden ~= nil) then
@@ -314,7 +329,7 @@ end
 function KRC_Display:GetGroupGeneralSpacing(aGroupName)
 	local realGroup = self.myGroups[aGroupName]
 	if (realGroup == nil) then
-		return false
+		return 0
 	end
 
 	local groupSettings = self:GetGroupSettings(aGroupName)
@@ -324,7 +339,7 @@ end
 function KRC_Display:SetGroupGeneralSpacing(aGroupName, aValue)
 	local realGroup = self.myGroups[aGroupName]
 	if (realGroup == nil) then
-		return false
+		return
 	end
 
 	local groupSettings = self:GetGroupSettings(aGroupName)
@@ -335,7 +350,7 @@ end
 function KRC_Display:GetGroupSpellSpacing(aGroupName)
 	local realGroup = self.myGroups[aGroupName]
 	if (realGroup == nil) then
-		return false
+		return 0
 	end
 
 	local groupSettings = self:GetGroupSettings(aGroupName)
@@ -345,7 +360,7 @@ end
 function KRC_Display:SetGroupSpellSpacing(aGroupName, aValue)
 	local realGroup = self.myGroups[aGroupName]
 	if (realGroup == nil) then
-		return false
+		return
 	end
 
 	local groupSettings = self:GetGroupSettings(aGroupName)
@@ -366,7 +381,7 @@ end
 function KRC_Display:SetGroupIsHidden(aGroupName, aValue)
 	local realGroup = self.myGroups[aGroupName]
 	if (realGroup == nil) then
-		return false
+		return
 	end
 
 	local groupSettings = self:GetGroupSettings(aGroupName)
@@ -376,6 +391,89 @@ function KRC_Display:SetGroupIsHidden(aGroupName, aValue)
 	else
 		realGroup.myMainFrame:Show()
 	end
+end
+
+function KRC_Display:IsGroupShowingExtraInfo(aGroupName)
+	local realGroup = self.myGroups[aGroupName]
+	if (realGroup == nil) then
+		return false
+	end
+
+	local groupSettings = self:GetGroupSettings(aGroupName)
+	return groupSettings.myShouldShowExtraInfo
+end
+
+function KRC_Display:SetGroupShowsExtraInfo(aGroupName, aValue)
+	local realGroup = self.myGroups[aGroupName]
+	if (realGroup == nil) then
+		return
+	end
+
+	local groupSettings = self:GetGroupSettings(aGroupName)
+	groupSettings.myShouldShowExtraInfo = aValue
+end
+
+function KRC_Display:GetGroupCasterWidth(aGroupName)
+	local realGroup = self.myGroups[aGroupName]
+	if (realGroup == nil) then
+		return 0
+	end
+
+	local groupSettings = self:GetGroupSettings(aGroupName)
+	return groupSettings.myCasterLableWidth
+end
+
+function KRC_Display:SetGroupCasterWidth(aGroupName, aValue)
+	local realGroup = self.myGroups[aGroupName]
+	if (realGroup == nil) then
+		return
+	end
+
+	local groupSettings = self:GetGroupSettings(aGroupName)
+	groupSettings.myCasterLableWidth = aValue
+	self:RepositionFramesInGroup(realGroup)
+end
+
+function KRC_Display:GetGroupSpellWidth(aGroupName)
+	local realGroup = self.myGroups[aGroupName]
+	if (realGroup == nil) then
+		return 0
+	end
+
+	local groupSettings = self:GetGroupSettings(aGroupName)
+	return groupSettings.mySpellLableWidth
+end
+
+function KRC_Display:SetGroupSpellWidth(aGroupName, aValue)
+	local realGroup = self.myGroups[aGroupName]
+	if (realGroup == nil) then
+		return
+	end
+
+	local groupSettings = self:GetGroupSettings(aGroupName)
+	groupSettings.mySpellLableWidth = aValue
+	self:RepositionFramesInGroup(realGroup)
+end
+
+function KRC_Display:GetGroupCooldownWidth(aGroupName)
+	local realGroup = self.myGroups[aGroupName]
+	if (realGroup == nil) then
+		return 0
+	end
+
+	local groupSettings = self:GetGroupSettings(aGroupName)
+	return groupSettings.myCooldownLableWidth
+end
+
+function KRC_Display:SetGroupCooldownWidth(aGroupName, aValue)
+	local realGroup = self.myGroups[aGroupName]
+	if (realGroup == nil) then
+		return
+	end
+
+	local groupSettings = self:GetGroupSettings(aGroupName)
+	groupSettings.myCooldownLableWidth = aValue
+	self:RepositionFramesInGroup(realGroup)
 end
 
 --
@@ -531,13 +629,37 @@ function KRC_Display:RepositionFramesInGroup(aGroup)
 
 	local width = 150
 	local height = math.abs(newY) + self.myTextHeight
-	if(numFrames > 0) then
-		width = aGroup.myFrames[1]:GetWidth()
+
+	for i = 1, table.getn(aGroup.myFrames) do
+		local frame = aGroup.myFrames[i]
+		
+		frame.myCasterLable.Text:SetWidth(groupSettings.myCasterLableWidth)
+
+		local iconPosition = frame.myCasterLable.Text:GetWidth() + 5
+		frame.icon:SetPoint("TOPLEFT", frame, "TOPLEFT", iconPosition, -1)
+
+		local spellPosition = iconPosition + frame.icon:GetWidth() + 5
+		frame.mySpellLabel.Text:SetPoint("TOPLEFT", frame, "TOPLEFT", spellPosition, 0)
+		frame.mySpellLabel.Text:SetWidth(groupSettings.mySpellLableWidth)
+
+		local cooldownPosition = spellPosition + frame.mySpellLabel.Text:GetWidth() + 5
+		frame.myCooldownLabel.Text:SetPoint("TOPLEFT", frame, "TOPLEFT", cooldownPosition, 0)
+		frame.myCooldownLabel.Text:SetWidth(groupSettings.myCooldownLableWidth)
+
+		width = cooldownPosition + groupSettings.myCooldownLableWidth
+		frame:SetWidth(width)
 	end
+
+	
 
 	aGroup.myMainFrame:SetWidth(width)
 	aGroup.myMainFrame:SetHeight(height)
 
+	if (groupSettings.myBottomLeftX ~= nil) then
+		aGroup.myMainFrame:ClearAllPoints()
+		aGroup.myMainFrame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", groupSettings.myBottomLeftX, groupSettings.myBottomLeftY)
+	end
+	
 	aGroup.myMainFrame.myBackground:SetWidth(width)
 	aGroup.myMainFrame.myBackground:SetHeight(height)
 
@@ -611,7 +733,7 @@ function KRC_Display:CanUnitCastSpell(aCasterName, aSpellID, someCasterData)
 end
 
 function KRC_Display:ShouldGroupShowSpell(aCasterName, aCasterClass, aSpellID, aGroup)
-	if (aGroup.mySpells[aSpellID].myEnabled == false) then
+	if (aGroup.mySpells[aSpellID].myEnabled == false or aGroup.mySpells[aSpellID].myEnabled == nil) then
 		self:DebugPrint("Spell " .. GetSpellInfo(aSpellID) .. " is not enabled in group " .. aGroup.myTitle .. ", hiding it.")
 		return false
 	end
@@ -623,7 +745,7 @@ function KRC_Display:ShouldGroupShowSpell(aCasterName, aCasterClass, aSpellID, a
 	end
 
 	if (self:IsSpeccActiveForSpellInGroup(aGroup.myTitle, aCasterClass, aSpellID, casterSpecc) == false) then
-		self:DebugPrint("Specc " .. casterSpecc .. " is not enabled in group " .. aGroup.myTitle .. ", hiding it.")
+		self:DebugPrint("Specc " .. casterSpecc .. " for spell " .. GetSpellInfo(aSpellID) .. " is not enabled in group " .. aGroup.myTitle .. ", hiding it.")
 		return false
 	end
 
@@ -647,6 +769,39 @@ function KRC_Display:UpdateFrameProgress(aFrame, someCasterData, aShouldAlwaysSh
 	end
 end
 
+function KRC_Display:AddExtraInformation(aGroupName, aFrame, aSpellID, aCasterName, someCasterData)
+	if(someCasterData.myHasNewData == false or someCasterData.myHasNewData == nil) then
+		return
+	end
+
+	local groupSettings = self:GetGroupSettings(aGroupName)
+	if(groupSettings.myShouldShowExtraInfo == false) then
+		return
+	end
+
+	local spellShortName = KRC_Spells:GetShortName(someCasterData.myClass, aSpellID)
+
+
+	if(KRC_Spells:IsAuraMastery(aSpellID) == true) then
+		if(someCasterData.myRemainingCD == nil) then
+			aFrame.mySpellLabel.Text:SetText(spellShortName)
+		else
+			local paladinAura = KRC_DataCollector:GetPaladinAura(aCasterName)
+			local auraShortName = KRC_Spells:GetPaladinAuraShortName(paladinAura)
+			aFrame.mySpellLabel.Text:SetText(spellShortName .. " (" .. auraShortName .. ")")
+		end
+
+		return
+	end
+
+	if(someCasterData.myTarget ~= nil) then
+		if(someCasterData.myRemainingCD == nil) then
+			aFrame.mySpellLabel.Text:SetText(spellShortName)
+		else
+			aFrame.mySpellLabel.Text:SetText(spellShortName .. " (" .. someCasterData.myTarget .. ")")
+		end
+	end
+end
 
 function KRC_Display:UpdateSpellForCasterInGroup(aSpellID, aCasterName, someCasterData, aGroup)
 	if(aGroup.mySpells[aSpellID] == nil) then
@@ -654,13 +809,6 @@ function KRC_Display:UpdateSpellForCasterInGroup(aSpellID, aCasterName, someCast
 	end
 
 	local frame, frameIndex = self:FindFrameInGroup(aGroup, aSpellID, aCasterName)
-	local isEnabled = aGroup.mySpells[aSpellID].myEnabled
-
-	if(isEnabled == false) then
-		self:RemoveFrameFromGroup(frame, frameIndex, aGroup)
-		return
-	end
-
 	if(self:IsUnitValid(aCasterName, someCasterData) == false) then
 		self:RemoveFrameFromGroup(frame, frameIndex, aGroup)
 		return
@@ -679,7 +827,9 @@ function KRC_Display:UpdateSpellForCasterInGroup(aSpellID, aCasterName, someCast
 	-- If the spell is on cooldown, or we should always show this spell then we require a frame,
 	-- which means we have to create one if we didnt have one allready
 	local shouldAlwaysShow = aGroup.mySpells[aSpellID].myAlwaysShow
-	local frameRequired = someCasterData.myRemainingCD ~= nil or shouldAlwaysShow
+	local isOnCooldown = someCasterData.myRemainingCD ~= nil
+
+	local frameRequired = isOnCooldown or shouldAlwaysShow
 	if (frame == nil and frameRequired == true) then
 		frame, frameIndex = self:CreateFrameAndAddToGroup(aGroup, aSpellID, aCasterName, someCasterData.myClass)
 	end
@@ -690,17 +840,22 @@ function KRC_Display:UpdateSpellForCasterInGroup(aSpellID, aCasterName, someCast
 			self:RemoveFrameFromGroup(frame, frameIndex, aGroup)
 		else
 			self:UpdateFrameProgress(frame, someCasterData, shouldAlwaysShow)
+			self:AddExtraInformation(aGroup.myTitle, frame, aSpellID, aCasterName, someCasterData)
 		end
 	end
 end
 
 function KRC_Display:Update()
-	for groupName, group in pairs(self.myGroups) do 
-		if(self:IsGroupHidden(groupName) == false) then
-			for spellID, spellData in pairs(KRC_DataCollector.myData) do
-				for casterName, casterData in pairs(spellData) do
+	for spellID, spellData in pairs(KRC_DataCollector.myData) do
+		for casterName, casterData in pairs(spellData) do
+			for groupName, group in pairs(self.myGroups) do 
+				if(self:IsGroupHidden(groupName) == false) then
 					self:UpdateSpellForCasterInGroup(spellID, casterName, casterData, group)
 				end
+			end
+
+			if(casterData.myHasNewData == true) then
+				casterData.myHasNewData = false
 			end
 		end
 	end

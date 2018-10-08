@@ -1,5 +1,4 @@
 TODO:
-- Add "Extra Information" that I added in old addon. Target of spell and Aura for Aura Mastery
 - Add PallyAura-tracker that old addon has
 - Fix spell-sorting. Class -> Spell -> CD
 - Ankh, Soulstone and Ardent Defender is not being tracked properly
@@ -15,13 +14,17 @@ Version 1.6
 - Added option to specify spacing between bars, and extra spacing between spells
 - Might have fixed the annoying sizing-issue, where it looked like groups were moving slightly when going from empty to showing 1 bar
 - Its now possible to hide groups. Hidden groups will do 0 processing, so will not consume any CPU-time, but will still consume memory
+- Added "Show Extra Info"-option to groups. Will show the target of the spell (if applicable), and the Aura used when a paladin uses Aura Mastery (with sortname, not icon)
+- Doesnt crash when someone uses AM with no aura active, and AM is being shown in a "extra info"-group
+- No need to swap to speccs/aura-tab and back when creating/deleting groups anymore
+- You cant create groups with no name anymore
+- Shouldnt crash anymore, if you somehow manage to delete a group that doesnt exist (only possible if you delete a group before creating one, Frozty....)
 
 Version 1.5
 - Added enrage for druidtanks
 - Changed RaidScanning to only run while we are not in combat
 - RaidScanning now uses MAX_NUM_RAID_MEMBERS instead of GetNumRaidMembers() when assigning UnitIDs, should hopefully end up with less (none?) invalid IDs, which was causing certain CDs to be not be shown for ~10s
 - We can now specify per spell which speccs that should show it (only show Divine Protection from tanks for example)
-
 
 Version 1.4
 - Fixed raidscanner layout, now properly shows all raidmember (why the fuck cant you just use GetNumRaidMembers() blizzard???)

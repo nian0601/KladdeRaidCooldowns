@@ -1,5 +1,23 @@
 local ourSelectedGroup = nil
-local ourTopMostContainer = nil
+local ourGroupsDropdown = nil
+local ourGroups = {}
+
+local function PopulateGroupsTable()
+	for k in pairs (ourGroups) do
+	    ourGroups[k] = nil
+	end
+
+	local firstGroup = nil
+	for groupName, group in pairs(KRC_Display.myGroups) do 
+		ourGroups[groupName] = groupName
+
+		if(firstGroup == nil) then
+			firstGroup = groupName
+		end
+	end
+
+	return firstGroup
+end
 
 local function CreateGeneralGroup(aContainer)
 	local generalHeading = KRC_Config.myGUI:Create("Heading")
@@ -22,9 +40,18 @@ local function CreateGeneralGroup(aContainer)
 		KRC_Display:SetGroupIsHidden(ourSelectedGroup, value)
 	end)
 
+	local extraInfoBox = KRC_Config.myGUI:Create("CheckBox")
+	extraInfoBox:SetValue(KRC_Display:IsGroupShowingExtraInfo(ourSelectedGroup))
+	extraInfoBox:SetLabel("Show Extra Info (Target etc)")
+	extraInfoBox:SetWidth(200)
+	extraInfoBox:SetCallback("OnValueChanged", function(widget, event, value)
+		KRC_Display:SetGroupShowsExtraInfo(ourSelectedGroup, value)
+	end)
+
 	aContainer:AddChild(generalHeading)
 	aContainer:AddChild(unlockBox)
 	aContainer:AddChild(hideGroupBox)
+	aContainer:AddChild(extraInfoBox)
 end
 
 local function CreatePositioningGroup(aContainer)
@@ -43,6 +70,7 @@ local function CreatePositioningGroup(aContainer)
 	local generalSpacingSlider = KRC_Config.myGUI:Create("Slider")
 	generalSpacingSlider:SetValue(KRC_Display:GetGroupGeneralSpacing(ourSelectedGroup))
 	generalSpacingSlider:SetLabel("Spacing Between Bars")
+	generalSpacingSlider:SetWidth(160)
 	generalSpacingSlider:SetCallback("OnValueChanged", function(widget, event, value)
 		KRC_Display:SetGroupGeneralSpacing(ourSelectedGroup, value)
 	end)
@@ -50,15 +78,42 @@ local function CreatePositioningGroup(aContainer)
 	local spellSpacingSlider = KRC_Config.myGUI:Create("Slider")
 	spellSpacingSlider:SetValue(KRC_Display:GetGroupSpellSpacing(ourSelectedGroup))
 	spellSpacingSlider:SetLabel("Spacing Between Spells")
+	spellSpacingSlider:SetWidth(160)
 	spellSpacingSlider:SetCallback("OnValueChanged", function(widget, event, value)
 		KRC_Display:SetGroupSpellSpacing(ourSelectedGroup, value)
 	end)
 
+	local casterNameSlider = KRC_Config.myGUI:Create("Slider")
+	casterNameSlider:SetValue(KRC_Display:GetGroupCasterWidth(ourSelectedGroup))
+	casterNameSlider:SetLabel("Name Width")
+	casterNameSlider:SetWidth(160)
+	casterNameSlider:SetCallback("OnValueChanged", function(widget, event, value)
+		KRC_Display:SetGroupCasterWidth(ourSelectedGroup, value)
+	end)
+
+	local spellNameSlider = KRC_Config.myGUI:Create("Slider")
+	spellNameSlider:SetValue(KRC_Display:GetGroupSpellWidth(ourSelectedGroup))
+	spellNameSlider:SetLabel("Spell Width")
+	spellNameSlider:SetWidth(160)
+	spellNameSlider:SetCallback("OnValueChanged", function(widget, event, value)
+		KRC_Display:SetGroupSpellWidth(ourSelectedGroup, value)
+	end)
+
+	local cooldownSlider = KRC_Config.myGUI:Create("Slider")
+	cooldownSlider:SetValue(KRC_Display:GetGroupCooldownWidth(ourSelectedGroup))
+	cooldownSlider:SetLabel("CD Width")
+	cooldownSlider:SetWidth(160)
+	cooldownSlider:SetCallback("OnValueChanged", function(widget, event, value)
+		KRC_Display:SetGroupCooldownWidth(ourSelectedGroup, value)
+	end)
 
 	aContainer:AddChild(positioningHeading)
 	aContainer:AddChild(growUpwards)
 	aContainer:AddChild(generalSpacingSlider)
 	aContainer:AddChild(spellSpacingSlider)
+	aContainer:AddChild(casterNameSlider)
+	aContainer:AddChild(spellNameSlider)
+	aContainer:AddChild(cooldownSlider)
 end
 
 local function CreateAddAndDeleteExitBoxes(aContainer)
@@ -73,11 +128,11 @@ local function CreateAddAndDeleteExitBoxes(aContainer)
 	newGroupEditBox:SetWidth(250)
 	newGroupEditBox:SetLabel("New Group")
 	newGroupEditBox:SetCallback("OnEnterPressed", function(widget, event, value)
-		KRC_Display:CreateEmptyGroup(value)
-
-		widget:SetText("")
-		ourTopMostContainer:DoLayout()
-
+		if(KRC_Display:CreateEmptyGroup(value)) then
+			widget:SetText("")
+			ourGroupsDropdown.dropdown:AddItem(value, value)
+			ourGroupsDropdown:SetGroup(value)
+		end
 	end)
 	newGroupGroup:AddChild(newGroupEditBox)
 
@@ -90,12 +145,14 @@ local function CreateAddAndDeleteExitBoxes(aContainer)
 	deleteEditBox:SetLabel("Type DELETE and hit enter to delete this group")
 	deleteEditBox:SetCallback("OnEnterPressed", function(widget, event, value)
 		if(value == "DELETE") then
-			KRC_Display:DeleteGroup(ourSelectedGroup)
+			if(KRC_Display:DeleteGroup(ourSelectedGroup) == true) then
+				local firstGroup = PopulateGroupsTable()
+				ourGroupsDropdown:SetGroupList(ourGroups)
+				ourGroupsDropdown:SetGroup(firstGroup)
+			end
+
+			widget:SetText("")
 		end
-
-		widget:SetText("")
-		ourTopMostContainer:DoLayout()
-
 	end)
 	deleteGroup:AddChild(deleteEditBox)
 
@@ -251,7 +308,6 @@ local function CreateSpellGroup(aScrollFrame, aClass, someSpellSpeccBoxes)
 		box:SetLabel(aString)
 
 		box:SetCallback("OnValueChanged", function(widget, event, value)
-			KRC_Display:Print("OnValueChanged: " .. GetSpellInfo(aSpellID))
 			KRC_Display:SetSpeccStatusForSpellInGroup(ourSelectedGroup, aClass, aSpellID, aString, value)
 		end)
 		box:SetWidth(60)
@@ -349,27 +405,17 @@ local function DrawGroupSettings(aContainer, anEvent, aClass)
 end
 
 function KRC_Config_DrawCooldowns(aContainer)
-	local groups = {}
-	local firstGroup = nil
-	for groupName, group in pairs(KRC_Display.myGroups) do 
-		groups[groupName] = groupName
 
-		if(firstGroup == nil) then
-			firstGroup = groupName
-		end
-	end
-	
-	ourTopMostContainer = aContainer
-
-
-
+	local firstGroup = PopulateGroupsTable()
 	local dropdown = KRC_Config.myGUI:Create("DropdownGroup")
 	dropdown:SetLayout("Fill")
 	dropdown:SetTitle("Groups")
-	dropdown:SetGroupList(groups)
+	dropdown:SetGroupList(ourGroups)
 	dropdown:SetCallback("OnGroupSelected", DrawGroupSettings)
 	dropdown:SetGroup(firstGroup)
 	dropdown:SetFullWidth(true)
+
+	ourGroupsDropdown = dropdown
 
 	aContainer:AddChild(dropdown)
 end

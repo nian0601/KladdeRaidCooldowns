@@ -627,13 +627,13 @@ KRC_Spells.myTargetedSpells = {
 
 KRC_Spells.myPaladinAuras =
 {
-	{ ["SpellID"] = 48942, ["Name"] = "Devotion Aura"},
-	{ ["SpellID"] = 54043, ["Name"] = "Retribution Aura"},
-	{ ["SpellID"] = 19746, ["Name"] = "Concentration Aura"},
-	{ ["SpellID"] = 48943, ["Name"] = "Shadow Resistance Aura"},
-	{ ["SpellID"] = 48947, ["Name"] = "Fire Resistance Aura"},
-	{ ["SpellID"] = 48945, ["Name"] = "Frost Resistance Aura"},
-	{ ["SpellID"] = 32223, ["Name"] = "Crusader Aura"}
+	{ ["SpellID"] = 48942, ["Name"] = "Devotion Aura", ["ShortName"] = "De"},
+	{ ["SpellID"] = 54043, ["Name"] = "Retribution Aura", ["ShortName"] = "Re"},
+	{ ["SpellID"] = 19746, ["Name"] = "Concentration Aura", ["ShortName"] = "Co"},
+	{ ["SpellID"] = 48943, ["Name"] = "Shadow Resistance Aura", ["ShortName"] = "Sh"},
+	{ ["SpellID"] = 48947, ["Name"] = "Fire Resistance Aura", ["ShortName"] = "Fi"},
+	{ ["SpellID"] = 48945, ["Name"] = "Frost Resistance Aura", ["ShortName"] = "Fr"},
+	{ ["SpellID"] = 32223, ["Name"] = "Crusader Aura", ["ShortName"] = "Cr"}
 }
 
 function KRC_Spells:IsSpellTracked(aSpellID)
@@ -699,4 +699,20 @@ end
 
 function KRC_Spells:GetSpellTalentRequirements(aClass, aSpellID)
 	return self.mySpells[aClass][aSpellID]["TalentRequirement"]
+end
+
+function KRC_Spells:GetPaladinAuraShortName(aLongName)
+
+	if(aLongName == nil) then
+		return "N"
+	end
+	
+	for i = 1, 7 do
+		if(self.myPaladinAuras[i]["Name"] == aLongName) then
+			return self.myPaladinAuras[i]["ShortName"]
+		end
+	end
+
+	KRC_Core:Print("Failed to find a shortname for " .. aLongName)
+	return "N"
 end
