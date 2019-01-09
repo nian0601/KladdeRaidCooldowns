@@ -8,7 +8,7 @@ local function PopulateGroupsTable()
 	end
 
 	local firstGroup = nil
-	for groupName, group in pairs(KRC_Display.myGroups) do 
+	for groupName, group in pairs(KRC_Display.myGroups) do
 		ourGroups[groupName] = groupName
 
 		if(firstGroup == nil) then
@@ -69,7 +69,7 @@ local function CreatePositioningGroup(aContainer)
 
 	local generalSpacingSlider = KRC_Config.myGUI:Create("Slider")
 	generalSpacingSlider:SetValue(KRC_Display:GetGroupGeneralSpacing(ourSelectedGroup))
-	generalSpacingSlider:SetLabel("Spacing Between Bars")
+	generalSpacingSlider:SetLabel("Bar Spacing")
 	generalSpacingSlider:SetWidth(160)
 	generalSpacingSlider:SetCallback("OnValueChanged", function(widget, event, value)
 		KRC_Display:SetGroupGeneralSpacing(ourSelectedGroup, value)
@@ -77,10 +77,18 @@ local function CreatePositioningGroup(aContainer)
 
 	local spellSpacingSlider = KRC_Config.myGUI:Create("Slider")
 	spellSpacingSlider:SetValue(KRC_Display:GetGroupSpellSpacing(ourSelectedGroup))
-	spellSpacingSlider:SetLabel("Spacing Between Spells")
+	spellSpacingSlider:SetLabel("Spell Spacing")
 	spellSpacingSlider:SetWidth(160)
 	spellSpacingSlider:SetCallback("OnValueChanged", function(widget, event, value)
 		KRC_Display:SetGroupSpellSpacing(ourSelectedGroup, value)
+	end)
+
+	local classSpacingSlider = KRC_Config.myGUI:Create("Slider")
+	classSpacingSlider:SetValue(KRC_Display:GetGroupClassSpacing(ourSelectedGroup))
+	classSpacingSlider:SetLabel("Class Spacing")
+	classSpacingSlider:SetWidth(160)
+	classSpacingSlider:SetCallback("OnValueChanged", function(widget, event, value)
+		KRC_Display:SetGroupClassSpacing(ourSelectedGroup, value)
 	end)
 
 	local casterNameSlider = KRC_Config.myGUI:Create("Slider")
@@ -111,6 +119,7 @@ local function CreatePositioningGroup(aContainer)
 	aContainer:AddChild(growUpwards)
 	aContainer:AddChild(generalSpacingSlider)
 	aContainer:AddChild(spellSpacingSlider)
+	aContainer:AddChild(classSpacingSlider)
 	aContainer:AddChild(casterNameSlider)
 	aContainer:AddChild(spellNameSlider)
 	aContainer:AddChild(cooldownSlider)
@@ -163,7 +172,7 @@ end
 
 local function DrawGeneralGroupSettings(aContainer, anEvent, aClass)
 	aContainer:ReleaseChildren()
-	
+
 	local scrollFrame = KRC_Config.myGUI:Create("ScrollFrame")
 	scrollFrame:SetLayout("Flow")
 	scrollFrame:SetFullWidth(true)
@@ -247,7 +256,7 @@ local function CreateEnableBox(aSpellID)
 			realGroup.mySpells[spellID].myEnabled = false
 			realGroup.mySpells[spellID].myAlwaysShow = false
 		end
-		
+
 		realGroup.mySpells[spellID].myEnabled = value
 	end)
 

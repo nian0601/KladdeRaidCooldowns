@@ -9,4 +9,9 @@
     <Include file="Libs\AceGUI-3.0\AceGUI-3.0.xml"/>
     <Include file="Libs\AceConfig-3.0\AceConfig-3.0.xml"/>
     <Include file="Libs\AceTimer-3.0\AceTimer-3.0.xml"/>
+    <Include file="Libs\LibUnitAura\LibUnitAura.xml"/>
+    <Include file="Libs\C_Timer\C_Timer.xml"/>
+    <Include file="Libs\LibTalentQuery-1.0\LibTalentQuery-1.0.xml"/>
+    <Include file="Libs\LibGroupTalents-1.0\lib.xml"/>
+    <Include file="Libs\LibRaidCooldowns\LibRaidCooldowns.xml"/>
 </Ui>

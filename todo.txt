@@ -7,7 +7,8 @@ Performance:
 - Add option to only track spells that should be shown in a group, right now we're always tracking all spells listed in KRC_Spells.lua, even if they are not being shown in any group.
 Having it that way lets us properly show CDs if we decide to enable a spell that had been used while it wasnt shown, but it takes a bit more performance
 
-
+Version 1.7 (https://github.com/nian0601/KladdeRaidCooldowns)
+- Added class-spacing option
 
 Version 1.6
 - Added Frenzied Regeneration for druidtanks

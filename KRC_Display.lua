@@ -18,28 +18,6 @@ local function SecondsToTimeDetail( t )
 	end
 end
 
---[[
-
-We'll be organizing things in "Groups".
-Each groups will contain the following info:
-
-myTitle, The title of the group, will be displayed ingame (OPTIONAL)
-mySpells, Table of all spells to track, each entry will have two booleans
-mySpells[SPELLID].myEnabled, Should this SPELLID be tracked at all?
-mySpells[SPELLID].myAlwaysShow, Should this SPELLID only be visible while its on cooldown?
-myPositionX/Y, Where on the screen is the group positioned
-myMainFrame, Containerframe for all the stuff in the group, that we use to move the group around
-
-myFrames, A list of all the currently active frames
-Each frame contains the following:
-myCaster, The name of the caster
-mySpellID, The ID of the spell
-myCasterLabel, Textwidget containing the name of the caster
-mySpellLabel, Textwiget containing the name of the spell, abbreviated where possible
-myCooldownLabel, Textwidget containing the remaining cooldown, or "Ready"-text if shown even when ready
-
-]]
-
 KRC_Display = LibStub("AceAddon-3.0"):NewAddon("KRC_Display", "AceConsole-3.0", "AceEvent-3.0")
 KRC_Display.myTextHeight = 10
 KRC_Display.myGroups = {}
@@ -51,13 +29,13 @@ function KRC_Display:Init()
 
 	self:InitializeGlobalDBVariables()
 
-	for groupName, groupSettings in pairs(KRC_Core.db.profile.myGroups) do 
+	for groupName, groupSettings in pairs(KRC_Core.db.profile.myGroups) do
 		self:CreateEmptyGroup(groupName)
 		self:ApplyGroupSettings(self.myGroups[groupName], groupSettings)
 	end
-	
+
 	--self:CreateEmptyGroup("Raid CDs")
-end	
+end
 
 function KRC_Display:DebugPrint(aMessage)
 	if(self.myEnableDebugPrinting == true) then
@@ -72,7 +50,7 @@ end
 function KRC_Display:SetLockedMode(aStatus)
 	KRC_Core.db.profile.myIsLocked = aStatus
 
-	for groupName, group in pairs(self.myGroups) do 
+	for groupName, group in pairs(self.myGroups) do
 		self:SetGroupLockedStatus(groupName, aStatus)
 	end
 end
@@ -92,6 +70,7 @@ function KRC_Display:SetPlayerSpecc(aPlayerName, aSpecc, aShouldSet)
 		settings.myPlayerSpeccs[aPlayerName] = aSpecc
 	end
 end
+
 --
 -- Group Management
 --
@@ -123,6 +102,10 @@ function KRC_Display:InitializeGroupDBVariables(aGroupName)
 
 	if(settings.mySpellSpacing == nil) then
 		settings.mySpellSpacing = 0
+	end
+
+	if(settings.myClassSpacing == nil) then
+		settings.myClassSpacing = 0
 	end
 
 	if(settings.myIsLocked == nil) then
@@ -225,7 +208,7 @@ end
 function KRC_Display:ApplyGroupSettings(aGroup, someSettings)
 
 	if (someSettings.mySpells ~= nil) then
-		for spellID, spellInfo in pairs(someSettings.mySpells) do 
+		for spellID, spellInfo in pairs(someSettings.mySpells) do
 			aGroup.mySpells[spellID] = {}
 			aGroup.mySpells[spellID].myEnabled = spellInfo.myEnabled
 			aGroup.mySpells[spellID].myAlwaysShow = spellInfo.myAlwaysShow
@@ -236,10 +219,10 @@ function KRC_Display:ApplyGroupSettings(aGroup, someSettings)
 
 	if(someSettings.myIsHidden ~= nil) then
 		self:SetGroupIsHidden(aGroup.myTitle, someSettings.myIsHidden)
-	end	
+	end
 
 	self:SetGroupLockedStatus(aGroup.myTitle, KRC_Core.db.profile.myIsLocked)
-	
+
 	self:RepositionFramesInGroup(aGroup)
 end
 
@@ -294,7 +277,7 @@ function KRC_Display:SetSpeccStatusForSpellInGroup(aGroupName, aClass, aSpellID,
 	end
 
 	local groupSettings = self:GetGroupSettings(aGroupName)
-	
+
 	if(groupSettings.mySpells[aSpellID] == nil) then
 		groupSettings.mySpells[aSpellID] = {}
 	end
@@ -365,6 +348,27 @@ function KRC_Display:SetGroupSpellSpacing(aGroupName, aValue)
 
 	local groupSettings = self:GetGroupSettings(aGroupName)
 	groupSettings.mySpellSpacing = aValue
+	self:RepositionFramesInGroup(realGroup)
+end
+
+function KRC_Display:GetGroupClassSpacing(aGroupName)
+	local realGroup = self.myGroups[aGroupName]
+	if (realGroup == nil) then
+		return 0
+	end
+
+	local groupSettings = self:GetGroupSettings(aGroupName)
+	return groupSettings.myClassSpacing
+end
+
+function KRC_Display:SetGroupClassSpacing(aGroupName, aValue)
+	local realGroup = self.myGroups[aGroupName]
+	if (realGroup == nil) then
+		return
+	end
+
+	local groupSettings = self:GetGroupSettings(aGroupName)
+	groupSettings.myClassSpacing = aValue
 	self:RepositionFramesInGroup(realGroup)
 end
 
@@ -502,7 +506,7 @@ function KRC_Display:CreateFrameAndAddToGroup(aGroup, aSpellID, aCasterName, aCa
 		frame = table.remove(self.myFreeFrames)
 	else
 		local numFrames = table.getn(aGroup.myFrames)
-		frame = CreateFrame("Frame", "KRC_Display_" .. aGroup.myTitle .. numFrames + 1, aGroup.myMainFrame)	
+		frame = CreateFrame("Frame", "KRC_Display_" .. aGroup.myTitle .. numFrames + 1, aGroup.myMainFrame)
 	end
 
 	frame.mySpellID = aSpellID
@@ -594,10 +598,12 @@ function KRC_Display:RepositionFramesInGroup(aGroup)
 
 	local generalSpacing = 2
 	local spellSpacing = 2
+	local classSpacing = 2
 	local growUpwards = false
 	if(groupSettings ~= nil) then
 		generalSpacing = groupSettings.myGeneralSpacing
 		spellSpacing = groupSettings.mySpellSpacing
+		classSpacing = groupSettings.myClassSpacing
 		growUpwards = groupSettings.myGrowBarsUp
 	end
 
@@ -605,10 +611,12 @@ function KRC_Display:RepositionFramesInGroup(aGroup)
 	if(growUpwards == true) then
 		frameMovement = -frameMovement
 		spellSpacing = -spellSpacing
+		classSpacing = -classSpacing
 	end
 
 	local newY = 0
 	local prevSpell = nil
+	local prevClass = nil
 	local numFrames = table.getn(aGroup.myFrames)
 
 	for i = 1, numFrames do
@@ -622,7 +630,12 @@ function KRC_Display:RepositionFramesInGroup(aGroup)
 			newY = newY - spellSpacing
 		end
 
+		if(prevClass ~= nil and prevClass ~= frame.myCasterClass) then
+			newY = newY - classSpacing
+		end
+
 		prevSpell = frame.mySpellID
+		prevClass = frame.myCasterClass
 
 		frame:SetPoint("TOPLEFT", aGroup.myMainFrame, "TOPLEFT", 0, newY)
 	end
@@ -632,7 +645,7 @@ function KRC_Display:RepositionFramesInGroup(aGroup)
 
 	for i = 1, table.getn(aGroup.myFrames) do
 		local frame = aGroup.myFrames[i]
-		
+
 		frame.myCasterLable.Text:SetWidth(groupSettings.myCasterLableWidth)
 
 		local iconPosition = frame.myCasterLable.Text:GetWidth() + 5
@@ -650,7 +663,7 @@ function KRC_Display:RepositionFramesInGroup(aGroup)
 		frame:SetWidth(width)
 	end
 
-	
+
 
 	aGroup.myMainFrame:SetWidth(width)
 	aGroup.myMainFrame:SetHeight(height)
@@ -659,7 +672,7 @@ function KRC_Display:RepositionFramesInGroup(aGroup)
 		aGroup.myMainFrame:ClearAllPoints()
 		aGroup.myMainFrame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", groupSettings.myBottomLeftX, groupSettings.myBottomLeftY)
 	end
-	
+
 	aGroup.myMainFrame.myBackground:SetWidth(width)
 	aGroup.myMainFrame.myBackground:SetHeight(height)
 
@@ -683,8 +696,6 @@ function KRC_Display:FindFrameInGroup(aGroup, aSpellID, aCasterName)
 
 	return nil, -1
 end
-
-
 
 --
 -- Updates
@@ -848,7 +859,7 @@ end
 function KRC_Display:Update()
 	for spellID, spellData in pairs(KRC_DataCollector.myData) do
 		for casterName, casterData in pairs(spellData) do
-			for groupName, group in pairs(self.myGroups) do 
+			for groupName, group in pairs(self.myGroups) do
 				if(self:IsGroupHidden(groupName) == false) then
 					self:UpdateSpellForCasterInGroup(spellID, casterName, casterData, group)
 				end
