@@ -7,11 +7,11 @@
 
 embeds.xml
 
-KRC_Config_RaidScan.lua
+KRC_Config_PallyAuras.lua
 KRC_Config_Cooldowns.lua
 KRC_Config.lua
 KRC_Helpers.lua
 KRC_Spells.lua
-KRC_DataCollector.lua
+KRC_PallyAuras.lua
 KRC_Display.lua
 KRC_Core.lua

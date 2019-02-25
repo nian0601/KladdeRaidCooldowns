@@ -1,4 +1,5 @@
 local ourSelectedGroup = nil
+local ourSelectedGroupSettings = nil
 local ourGroupsDropdown = nil
 local ourGroups = {}
 
@@ -19,13 +20,17 @@ local function PopulateGroupsTable()
 	return firstGroup
 end
 
+local function ApplySettings()
+	KRC_Display:RepositionFramesInGroupWithName(ourSelectedGroup)
+end
+
 local function CreateGeneralGroup(aContainer)
 	local generalHeading = KRC_Config.myGUI:Create("Heading")
 	generalHeading:SetText("General")
 	generalHeading:SetFullWidth(true)
 
 	local unlockBox = KRC_Config.myGUI:Create("CheckBox")
-	unlockBox:SetValue(KRC_Display:IsInLockedMode())
+	unlockBox:SetValue(KRC_Core.db.profile.myIsLocked)
 	unlockBox:SetLabel("Unlock")
 	unlockBox:SetWidth(100)
 	unlockBox:SetCallback("OnValueChanged", function(widget, event, value)
@@ -33,7 +38,7 @@ local function CreateGeneralGroup(aContainer)
 	end)
 
 	local hideGroupBox = KRC_Config.myGUI:Create("CheckBox")
-	hideGroupBox:SetValue(KRC_Display:IsGroupHidden(ourSelectedGroup))
+	hideGroupBox:SetValue(ourSelectedGroupSettings.myIsHidden)
 	hideGroupBox:SetLabel("Hide Group")
 	hideGroupBox:SetWidth(100)
 	hideGroupBox:SetCallback("OnValueChanged", function(widget, event, value)
@@ -41,11 +46,12 @@ local function CreateGeneralGroup(aContainer)
 	end)
 
 	local extraInfoBox = KRC_Config.myGUI:Create("CheckBox")
-	extraInfoBox:SetValue(KRC_Display:IsGroupShowingExtraInfo(ourSelectedGroup))
+	extraInfoBox:SetValue(ourSelectedGroupSettings.myShouldShowExtraInfo)
 	extraInfoBox:SetLabel("Show Extra Info (Target etc)")
 	extraInfoBox:SetWidth(200)
 	extraInfoBox:SetCallback("OnValueChanged", function(widget, event, value)
-		KRC_Display:SetGroupShowsExtraInfo(ourSelectedGroup, value)
+		ourSelectedGroupSettings.myShouldShowExtraInfo = value
+		ApplySettings()
 	end)
 
 	aContainer:AddChild(generalHeading)
@@ -54,75 +60,120 @@ local function CreateGeneralGroup(aContainer)
 	aContainer:AddChild(extraInfoBox)
 end
 
-local function CreatePositioningGroup(aContainer)
-	local positioningHeading = KRC_Config.myGUI:Create("Heading")
-	positioningHeading:SetText("Positioning")
-	positioningHeading:SetFullWidth(true)
-
-	local growUpwards = KRC_Config.myGUI:Create("CheckBox")
-	growUpwards:SetValue(KRC_Display:IsGroupGrowUp(ourSelectedGroup))
-	growUpwards:SetLabel("Grow Bars Up")
-	growUpwards:SetWidth(120)
-	growUpwards:SetCallback("OnValueChanged", function(widget, event, value)
-		KRC_Display:SetGroupGrowUp(ourSelectedGroup, value)
-	end)
-
-	local generalSpacingSlider = KRC_Config.myGUI:Create("Slider")
-	generalSpacingSlider:SetValue(KRC_Display:GetGroupGeneralSpacing(ourSelectedGroup))
-	generalSpacingSlider:SetLabel("Bar Spacing")
-	generalSpacingSlider:SetWidth(160)
-	generalSpacingSlider:SetCallback("OnValueChanged", function(widget, event, value)
-		KRC_Display:SetGroupGeneralSpacing(ourSelectedGroup, value)
-	end)
-
-	local spellSpacingSlider = KRC_Config.myGUI:Create("Slider")
-	spellSpacingSlider:SetValue(KRC_Display:GetGroupSpellSpacing(ourSelectedGroup))
-	spellSpacingSlider:SetLabel("Spell Spacing")
-	spellSpacingSlider:SetWidth(160)
-	spellSpacingSlider:SetCallback("OnValueChanged", function(widget, event, value)
-		KRC_Display:SetGroupSpellSpacing(ourSelectedGroup, value)
-	end)
-
-	local classSpacingSlider = KRC_Config.myGUI:Create("Slider")
-	classSpacingSlider:SetValue(KRC_Display:GetGroupClassSpacing(ourSelectedGroup))
-	classSpacingSlider:SetLabel("Class Spacing")
-	classSpacingSlider:SetWidth(160)
-	classSpacingSlider:SetCallback("OnValueChanged", function(widget, event, value)
-		KRC_Display:SetGroupClassSpacing(ourSelectedGroup, value)
-	end)
+local function CreateBarSettingsGroup(aContainer)
+	local heading = KRC_Config.myGUI:Create("Heading")
+	heading:SetText("Bar Settings")
+	heading:SetFullWidth(true)
 
 	local casterNameSlider = KRC_Config.myGUI:Create("Slider")
-	casterNameSlider:SetValue(KRC_Display:GetGroupCasterWidth(ourSelectedGroup))
+	casterNameSlider:SetValue(ourSelectedGroupSettings.myCasterLableWidth)
 	casterNameSlider:SetLabel("Name Width")
 	casterNameSlider:SetWidth(160)
 	casterNameSlider:SetCallback("OnValueChanged", function(widget, event, value)
-		KRC_Display:SetGroupCasterWidth(ourSelectedGroup, value)
+		ourSelectedGroupSettings.myCasterLableWidth = value
+		ApplySettings()
 	end)
 
 	local spellNameSlider = KRC_Config.myGUI:Create("Slider")
-	spellNameSlider:SetValue(KRC_Display:GetGroupSpellWidth(ourSelectedGroup))
+	spellNameSlider:SetValue(ourSelectedGroupSettings.mySpellLableWidth)
 	spellNameSlider:SetLabel("Spell Width")
 	spellNameSlider:SetWidth(160)
 	spellNameSlider:SetCallback("OnValueChanged", function(widget, event, value)
-		KRC_Display:SetGroupSpellWidth(ourSelectedGroup, value)
+		ourSelectedGroupSettings.mySpellLableWidth = value;
+		ApplySettings()
 	end)
 
 	local cooldownSlider = KRC_Config.myGUI:Create("Slider")
-	cooldownSlider:SetValue(KRC_Display:GetGroupCooldownWidth(ourSelectedGroup))
+	cooldownSlider:SetValue(ourSelectedGroupSettings.myCooldownLableWidth)
 	cooldownSlider:SetLabel("CD Width")
 	cooldownSlider:SetWidth(160)
 	cooldownSlider:SetCallback("OnValueChanged", function(widget, event, value)
-		KRC_Display:SetGroupCooldownWidth(ourSelectedGroup, value)
+		ourSelectedGroupSettings.myCooldownLableWidth = value
+		ApplySettings()
 	end)
 
-	aContainer:AddChild(positioningHeading)
-	aContainer:AddChild(growUpwards)
-	aContainer:AddChild(generalSpacingSlider)
-	aContainer:AddChild(spellSpacingSlider)
-	aContainer:AddChild(classSpacingSlider)
+	local extraWidthSlider = KRC_Config.myGUI:Create("Slider")
+	extraWidthSlider:SetValue(ourSelectedGroupSettings.myExtraDetailsLableWidth)
+	extraWidthSlider:SetLabel("Extra Info Width")
+	extraWidthSlider:SetWidth(160)
+	extraWidthSlider:SetCallback("OnValueChanged", function(widget, event, value)
+		ourSelectedGroupSettings.myExtraDetailsLableWidth = value
+		ApplySettings()
+	end)
+
+	local iconOnLeftSide = KRC_Config.myGUI:Create("CheckBox")
+	iconOnLeftSide:SetValue(ourSelectedGroupSettings.myIconOnLeft)
+	iconOnLeftSide:SetLabel("Icon On Left Side")
+	iconOnLeftSide:SetWidth(130)
+	iconOnLeftSide:SetCallback("OnValueChanged", function(widget, event, value)
+		ourSelectedGroupSettings.myIconOnLeft = value;
+		ApplySettings()
+	end)
+
+	local hideSpellName = KRC_Config.myGUI:Create("CheckBox")
+	hideSpellName:SetValue(ourSelectedGroupSettings.myHideSpellName)
+	hideSpellName:SetLabel("Hide Spell Name")
+	hideSpellName:SetWidth(130)
+	hideSpellName:SetCallback("OnValueChanged", function(widget, event, value)
+		ourSelectedGroupSettings.myHideSpellName = value;
+		ApplySettings()
+	end)
+
+	aContainer:AddChild(heading)
 	aContainer:AddChild(casterNameSlider)
 	aContainer:AddChild(spellNameSlider)
 	aContainer:AddChild(cooldownSlider)
+	aContainer:AddChild(extraWidthSlider)
+	aContainer:AddChild(iconOnLeftSide)
+	aContainer:AddChild(hideSpellName)
+end
+
+local function CreateGroupSpacingGroup(aContainer)
+	local heading = KRC_Config.myGUI:Create("Heading")
+	heading:SetText("Group Spacing")
+	heading:SetFullWidth(true)
+
+	local growUpwards = KRC_Config.myGUI:Create("CheckBox")
+	growUpwards:SetValue(ourSelectedGroupSettings.myGrowBarsUp)
+	growUpwards:SetLabel("Grow Bars Up")
+	growUpwards:SetWidth(120)
+	growUpwards:SetCallback("OnValueChanged", function(widget, event, value)
+		ourSelectedGroupSettings.myGrowBarsUp = value
+		ApplySettings()
+	end)
+
+	local barSpacingSlider = KRC_Config.myGUI:Create("Slider")
+	barSpacingSlider:SetValue(ourSelectedGroupSettings.myGeneralSpacing)
+	barSpacingSlider:SetLabel("Bar Spacing")
+	barSpacingSlider:SetWidth(160)
+	barSpacingSlider:SetCallback("OnValueChanged", function(widget, event, value)
+		ourSelectedGroupSettings.myGeneralSpacing = value
+		ApplySettings()
+	end)
+
+	local spellSpacingSlider = KRC_Config.myGUI:Create("Slider")
+	spellSpacingSlider:SetValue(ourSelectedGroupSettings.mySpellSpacing)
+	spellSpacingSlider:SetLabel("Spell Spacing")
+	spellSpacingSlider:SetWidth(160)
+	spellSpacingSlider:SetCallback("OnValueChanged", function(widget, event, value)
+		ourSelectedGroupSettings.mySpellSpacing = value
+		ApplySettings()
+	end)
+
+	local classSpacingSlider = KRC_Config.myGUI:Create("Slider")
+	classSpacingSlider:SetValue(ourSelectedGroupSettings.myClassSpacing)
+	classSpacingSlider:SetLabel("Class Spacing")
+	classSpacingSlider:SetWidth(160)
+	classSpacingSlider:SetCallback("OnValueChanged", function(widget, event, value)
+		ourSelectedGroupSettings.myClassSpacing = value
+		ApplySettings()
+	end)
+
+	aContainer:AddChild(heading)
+	aContainer:AddChild(growUpwards)
+	aContainer:AddChild(barSpacingSlider)
+	aContainer:AddChild(spellSpacingSlider)
+	aContainer:AddChild(classSpacingSlider)
 end
 
 local function CreateAddAndDeleteExitBoxes(aContainer)
@@ -179,7 +230,8 @@ local function DrawGeneralGroupSettings(aContainer, anEvent, aClass)
 	scrollFrame:SetFullHeight(true)
 
 	CreateGeneralGroup(scrollFrame)
-	CreatePositioningGroup(scrollFrame)
+	CreateBarSettingsGroup(scrollFrame)
+	CreateGroupSpacingGroup(scrollFrame)
 	CreateAddAndDeleteExitBoxes(scrollFrame)
 
 	aContainer:AddChild(scrollFrame)
@@ -313,7 +365,7 @@ local function CreateSpellGroup(aScrollFrame, aClass, someSpellSpeccBoxes)
 	-- The function for creating the Specc-filters for each spell
 	local createSpeccBox = function(aString, aSpellID)
 		local box = KRC_Config.myGUI:Create("CheckBox")
-		box:SetValue(KRC_Display:IsSpeccActiveForSpellInGroup(ourSelectedGroup, aClass, aSpellID, aString))
+		box:SetValue(KRC_Display:IsSpeccActiveForSpellInGroup(ourSelectedGroup, aSpellID, aString))
 		box:SetLabel(aString)
 
 		box:SetCallback("OnValueChanged", function(widget, event, value)
@@ -389,6 +441,7 @@ end
 
 local function DrawGroupSettings(aContainer, anEvent, aClass)
 	ourSelectedGroup = aClass
+	ourSelectedGroupSettings = KRC_Display:GetGroupSettings(ourSelectedGroup)
 
 	aContainer:ReleaseChildren()
 

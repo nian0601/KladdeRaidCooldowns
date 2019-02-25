@@ -22,9 +22,15 @@ KRC_Display = LibStub("AceAddon-3.0"):NewAddon("KRC_Display", "AceConsole-3.0", 
 KRC_Display.myTextHeight = 10
 KRC_Display.myGroups = {}
 KRC_Display.myFreeFrames = {}
+KRC_Display.myPaladinAuras = {}
 KRC_Display.myEnableDebugPrinting = false
 
 function KRC_Display:Init()
+	self.LibRaidCooldowns = LibStub("LibRaidCooldowns")
+	self.LibRaidCooldowns:Register(self)
+
+	self.GroupTalents = LibStub("LibGroupTalents-1.0")
+
 	self.myMediaPath = "Interface\\Addons\\KladdeRaidCooldowns_V2\\Media\\"
 
 	self:InitializeGlobalDBVariables()
@@ -43,31 +49,11 @@ function KRC_Display:DebugPrint(aMessage)
 	end
 end
 
-function KRC_Display:IsInLockedMode()
-	return KRC_Core.db.profile.myIsLocked
-end
-
 function KRC_Display:SetLockedMode(aStatus)
 	KRC_Core.db.profile.myIsLocked = aStatus
 
 	for groupName, group in pairs(self.myGroups) do
 		self:SetGroupLockedStatus(groupName, aStatus)
-	end
-end
-
-function KRC_Display:GetPlayerSpecc(aPlayerName)
-	local settings = KRC_Core.db.profile
-
-	return settings.myPlayerSpeccs[aPlayerName]
-end
-
-function KRC_Display:SetPlayerSpecc(aPlayerName, aSpecc, aShouldSet)
-	local settings = KRC_Core.db.profile
-
-	if(aShouldSet == false and settings.myPlayerSpeccs[aPlayerName] == aSpecc) then
-		settings.myPlayerSpeccs[aPlayerName] = nil
-	elseif(aShouldSet == true) then
-		settings.myPlayerSpeccs[aPlayerName] = aSpecc
 	end
 end
 
@@ -124,6 +110,18 @@ function KRC_Display:InitializeGroupDBVariables(aGroupName)
 		settings.myCasterLableWidth = 50
 		settings.mySpellLableWidth = 45
 		settings.myCooldownLableWidth = 40
+	end
+
+	if(settings.myIconOnLeft == nil) then
+		settings.myIconOnLeft = false
+	end
+
+	if(settings.myHideSpellName == nil) then
+		settings.myHideSpellName = false
+	end
+
+	if(settings.myExtraDetailsLableWidth == nil) then
+		settings.myExtraDetailsLableWidth = 20
 	end
 end
 
@@ -226,6 +224,10 @@ function KRC_Display:ApplyGroupSettings(aGroup, someSettings)
 	self:RepositionFramesInGroup(aGroup)
 end
 
+--
+-- Config Functions
+--
+
 function KRC_Display:SetGroupLockedStatus(aGroupName, aStatus)
 	local realGroup = self.myGroups[aGroupName]
 	if (realGroup == nil) then
@@ -236,28 +238,6 @@ function KRC_Display:SetGroupLockedStatus(aGroupName, aStatus)
 	realGroup.myMainFrame:EnableMouse(aStatus)
 end
 
-function KRC_Display:IsGroupGrowUp(aGroupName)
-	local realGroup = self.myGroups[aGroupName]
-	if (realGroup == nil) then
-		return false
-	end
-
-	local groupSettings = self:GetGroupSettings(aGroupName)
-	return groupSettings.myGrowBarsUp
-end
-
-function KRC_Display:SetGroupGrowUp(aGroupName, aValue)
-	local realGroup = self.myGroups[aGroupName]
-	if (realGroup == nil) then
-		return false
-	end
-
-	local groupSettings = self:GetGroupSettings(aGroupName)
-	groupSettings.myGrowBarsUp = aValue
-
-	self:RepositionFramesInGroup(realGroup)
-end
-
 function KRC_Display:SetSpeccStatusForGroup(aGroupName, aClass, aSpecc, aStatus)
 	local realGroup = self.myGroups[aGroupName]
 	if (realGroup == nil) then
@@ -266,11 +246,11 @@ function KRC_Display:SetSpeccStatusForGroup(aGroupName, aClass, aSpecc, aStatus)
 
 	local classSpells = KRC_Spells.mySpells[aClass]
 	for spellID, spellInfo in pairs(classSpells) do
-		self:SetSpeccStatusForSpellInGroup(aGroupName, aClass, spellID, aSpecc, aStatus)
+		self:SetSpeccStatusForSpellInGroup(aGroupName, spellID, aSpecc, aStatus)
 	end
 end
 
-function KRC_Display:SetSpeccStatusForSpellInGroup(aGroupName, aClass, aSpellID, aSpecc, aStatus)
+function KRC_Display:SetSpeccStatusForSpellInGroup(aGroupName, aSpellID, aSpecc, aStatus)
 	local realGroup = self.myGroups[aGroupName]
 	if (realGroup == nil) then
 		return
@@ -287,9 +267,12 @@ function KRC_Display:SetSpeccStatusForSpellInGroup(aGroupName, aClass, aSpellID,
 	end
 
 	groupSettings.mySpells[aSpellID].mySpeccs[aSpecc] = aStatus
+
+	self.LibRaidCooldowns:Unregister(self)
+	self.LibRaidCooldowns:Register(self)
 end
 
-function KRC_Display:IsSpeccActiveForSpellInGroup(aGroupName, aClass, aSpellID, aSpecc)
+function KRC_Display:IsSpeccActiveForSpellInGroup(aGroupName, aSpellID, aSpecc)
 	local realGroup = self.myGroups[aGroupName]
 	if (realGroup == nil) then
 		return false
@@ -307,69 +290,6 @@ function KRC_Display:IsSpeccActiveForSpellInGroup(aGroupName, aClass, aSpellID, 
 	end
 
 	return speccs[aSpecc] == true
-end
-
-function KRC_Display:GetGroupGeneralSpacing(aGroupName)
-	local realGroup = self.myGroups[aGroupName]
-	if (realGroup == nil) then
-		return 0
-	end
-
-	local groupSettings = self:GetGroupSettings(aGroupName)
-	return groupSettings.myGeneralSpacing
-end
-
-function KRC_Display:SetGroupGeneralSpacing(aGroupName, aValue)
-	local realGroup = self.myGroups[aGroupName]
-	if (realGroup == nil) then
-		return
-	end
-
-	local groupSettings = self:GetGroupSettings(aGroupName)
-	groupSettings.myGeneralSpacing = aValue
-	self:RepositionFramesInGroup(realGroup)
-end
-
-function KRC_Display:GetGroupSpellSpacing(aGroupName)
-	local realGroup = self.myGroups[aGroupName]
-	if (realGroup == nil) then
-		return 0
-	end
-
-	local groupSettings = self:GetGroupSettings(aGroupName)
-	return groupSettings.mySpellSpacing
-end
-
-function KRC_Display:SetGroupSpellSpacing(aGroupName, aValue)
-	local realGroup = self.myGroups[aGroupName]
-	if (realGroup == nil) then
-		return
-	end
-
-	local groupSettings = self:GetGroupSettings(aGroupName)
-	groupSettings.mySpellSpacing = aValue
-	self:RepositionFramesInGroup(realGroup)
-end
-
-function KRC_Display:GetGroupClassSpacing(aGroupName)
-	local realGroup = self.myGroups[aGroupName]
-	if (realGroup == nil) then
-		return 0
-	end
-
-	local groupSettings = self:GetGroupSettings(aGroupName)
-	return groupSettings.myClassSpacing
-end
-
-function KRC_Display:SetGroupClassSpacing(aGroupName, aValue)
-	local realGroup = self.myGroups[aGroupName]
-	if (realGroup == nil) then
-		return
-	end
-
-	local groupSettings = self:GetGroupSettings(aGroupName)
-	groupSettings.myClassSpacing = aValue
-	self:RepositionFramesInGroup(realGroup)
 end
 
 function KRC_Display:IsGroupHidden(aGroupName)
@@ -397,89 +317,6 @@ function KRC_Display:SetGroupIsHidden(aGroupName, aValue)
 	end
 end
 
-function KRC_Display:IsGroupShowingExtraInfo(aGroupName)
-	local realGroup = self.myGroups[aGroupName]
-	if (realGroup == nil) then
-		return false
-	end
-
-	local groupSettings = self:GetGroupSettings(aGroupName)
-	return groupSettings.myShouldShowExtraInfo
-end
-
-function KRC_Display:SetGroupShowsExtraInfo(aGroupName, aValue)
-	local realGroup = self.myGroups[aGroupName]
-	if (realGroup == nil) then
-		return
-	end
-
-	local groupSettings = self:GetGroupSettings(aGroupName)
-	groupSettings.myShouldShowExtraInfo = aValue
-end
-
-function KRC_Display:GetGroupCasterWidth(aGroupName)
-	local realGroup = self.myGroups[aGroupName]
-	if (realGroup == nil) then
-		return 0
-	end
-
-	local groupSettings = self:GetGroupSettings(aGroupName)
-	return groupSettings.myCasterLableWidth
-end
-
-function KRC_Display:SetGroupCasterWidth(aGroupName, aValue)
-	local realGroup = self.myGroups[aGroupName]
-	if (realGroup == nil) then
-		return
-	end
-
-	local groupSettings = self:GetGroupSettings(aGroupName)
-	groupSettings.myCasterLableWidth = aValue
-	self:RepositionFramesInGroup(realGroup)
-end
-
-function KRC_Display:GetGroupSpellWidth(aGroupName)
-	local realGroup = self.myGroups[aGroupName]
-	if (realGroup == nil) then
-		return 0
-	end
-
-	local groupSettings = self:GetGroupSettings(aGroupName)
-	return groupSettings.mySpellLableWidth
-end
-
-function KRC_Display:SetGroupSpellWidth(aGroupName, aValue)
-	local realGroup = self.myGroups[aGroupName]
-	if (realGroup == nil) then
-		return
-	end
-
-	local groupSettings = self:GetGroupSettings(aGroupName)
-	groupSettings.mySpellLableWidth = aValue
-	self:RepositionFramesInGroup(realGroup)
-end
-
-function KRC_Display:GetGroupCooldownWidth(aGroupName)
-	local realGroup = self.myGroups[aGroupName]
-	if (realGroup == nil) then
-		return 0
-	end
-
-	local groupSettings = self:GetGroupSettings(aGroupName)
-	return groupSettings.myCooldownLableWidth
-end
-
-function KRC_Display:SetGroupCooldownWidth(aGroupName, aValue)
-	local realGroup = self.myGroups[aGroupName]
-	if (realGroup == nil) then
-		return
-	end
-
-	local groupSettings = self:GetGroupSettings(aGroupName)
-	groupSettings.myCooldownLableWidth = aValue
-	self:RepositionFramesInGroup(realGroup)
-end
-
 --
 -- Frame management
 --
@@ -496,6 +333,59 @@ local function CompareFrames(aFrame, bFrame)
 	end
 
 	return a.myRemainingCD < b.myRemainingCD
+end
+
+function KRC_Display:CreateCasterLable(aFrame, aColor, aCasterName)
+	if(aFrame.myCasterLable == nil) then
+		aFrame.myCasterLable = self:CreateText(aFrame:GetName() .. "_CasterLable", aFrame)
+	end
+
+	aFrame.myCasterLable.Text:ClearAllPoints()
+	aFrame.myCasterLable.Text:SetHeight(self.myTextHeight)
+	aFrame.myCasterLable.Text:SetTextColor(aColor.r, aColor.g, aColor.b)
+	aFrame.myCasterLable.Text:SetText(aCasterName)
+end
+
+function KRC_Display:CreateSpellIcon(aFrame, aSpellID)
+	if(aFrame.icon == nil) then
+		aFrame.icon = aFrame:CreateTexture(nil, "LOW")
+	end
+
+	local _, _, spellIcon = GetSpellInfo(aSpellID)
+	aFrame.icon:SetWidth(self.myTextHeight)
+	aFrame.icon:SetHeight(self.myTextHeight)
+	aFrame.icon:SetTexture(spellIcon)
+end
+
+function KRC_Display:CreateSpellLable(aFrame, aColor, aCasterClass, aSpellID)
+	if(aFrame.mySpellLabel == nil) then
+		aFrame.mySpellLabel = self:CreateText(aFrame:GetName() .. "_CasterLable", aFrame)
+	end
+	aFrame.mySpellLabel.Text:ClearAllPoints()
+	aFrame.mySpellLabel.Text:SetHeight(self.myTextHeight)
+	aFrame.mySpellLabel.Text:SetTextColor(aColor.r, aColor.g, aColor.b)
+	aFrame.mySpellLabel.Text:SetText(KRC_Spells:GetShortName(aCasterClass, aSpellID))
+end
+
+function KRC_Display:CreateExtraDetailsLable(aFrame, aColor)
+	if(aFrame.myExtraDetailsLable == nil) then
+		aFrame.myExtraDetailsLable = self:CreateText(aFrame:GetName() .. "_ExtraDetailsLable", aFrame)
+	end
+	aFrame.myExtraDetailsLable.Text:ClearAllPoints()
+	aFrame.myExtraDetailsLable.Text:SetHeight(self.myTextHeight)
+	aFrame.myExtraDetailsLable.Text:SetTextColor(aColor.r, aColor.g, aColor.b)
+	aFrame.myExtraDetailsLable.Text:SetText("")
+end
+
+function KRC_Display:CreateCooldownLable(aFrame)
+	if(aFrame.myCooldownLabel == nil) then
+		aFrame.myCooldownLabel = self:CreateText(aFrame:GetName() .. "_CasterLable", aFrame)
+	end
+
+	aFrame.myCooldownLabel.Text:ClearAllPoints()
+	aFrame.myCooldownLabel.Text:SetHeight(self.myTextHeight)
+	aFrame.myCooldownLabel.Text:SetTextColor(0.85, 0.1, 0.1)
+	aFrame.myCooldownLabel.Text:SetText(0)
 end
 
 function KRC_Display:CreateFrameAndAddToGroup(aGroup, aSpellID, aCasterName, aCasterClass)
@@ -521,58 +411,14 @@ function KRC_Display:CreateFrameAndAddToGroup(aGroup, aSpellID, aCasterName, aCa
 	frame:SetHeight(10)
 
 	local color = RAID_CLASS_COLORS[aCasterClass]
-	local casterLableWidth = 50
-	local spellLableWidth = 45
-	local cooldownLableWidth = 40
 
+	self:CreateCasterLable(frame, color, aCasterName)
+	self:CreateSpellIcon(frame, aSpellID)
+	self:CreateSpellLable(frame, color, aCasterClass, aSpellID)
+	self:CreateExtraDetailsLable(frame, color)
+	self:CreateCooldownLable(frame)
+	
 
-	if(frame.myCasterLable == nil) then
-		frame.myCasterLable = self:CreateText(frame:GetName() .. "_CasterLable", frame)
-	end
-
-	frame.myCasterLable.Text:ClearAllPoints()
-	frame.myCasterLable.Text:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
-	frame.myCasterLable.Text:SetWidth(casterLableWidth)
-	frame.myCasterLable.Text:SetHeight(self.myTextHeight)
-	frame.myCasterLable.Text:SetTextColor(color.r, color.g, color.b)
-	frame.myCasterLable.Text:SetText(aCasterName)
-
-	local iconPosition = frame.myCasterLable.Text:GetWidth() + 5
-	local _, _, spellIcon = GetSpellInfo(aSpellID)
-
-	if(frame.icon == nil) then
-		frame.icon = frame:CreateTexture(nil, "LOW")
-	end
-
-	frame.icon:SetWidth(self.myTextHeight)
-	frame.icon:SetHeight(self.myTextHeight)
-	frame.icon:SetTexture(spellIcon)
-	frame.icon:SetPoint("TOPLEFT", frame, "TOPLEFT", iconPosition, -1)
-
-	local spellPosition = iconPosition + frame.icon:GetWidth() + 5
-	if(frame.mySpellLabel == nil) then
-		frame.mySpellLabel = self:CreateText(frame:GetName() .. "_CasterLable", frame)
-	end
-	frame.mySpellLabel.Text:ClearAllPoints()
-	frame.mySpellLabel.Text:SetPoint("TOPLEFT", frame, "TOPLEFT", spellPosition, 0)
-	frame.mySpellLabel.Text:SetWidth(spellLableWidth)
-	frame.mySpellLabel.Text:SetHeight(self.myTextHeight)
-	frame.mySpellLabel.Text:SetTextColor(color.r, color.g, color.b)
-	frame.mySpellLabel.Text:SetText(KRC_Spells:GetShortName(aCasterClass, aSpellID))
-
-	local cooldownPosition = spellPosition + frame.mySpellLabel.Text:GetWidth() + 5
-	if(frame.myCooldownLabel == nil) then
-		frame.myCooldownLabel = self:CreateText(frame:GetName() .. "_CasterLable", frame)
-	end
-
-	frame.myCooldownLabel.Text:ClearAllPoints()
-	frame.myCooldownLabel.Text:SetPoint("TOPLEFT", frame, "TOPLEFT", cooldownPosition, 0)
-	frame.myCooldownLabel.Text:SetWidth(cooldownLableWidth)
-	frame.myCooldownLabel.Text:SetHeight(self.myTextHeight)
-	frame.myCooldownLabel.Text:SetTextColor(0.85, 0.1, 0.1)
-	frame.myCooldownLabel.Text:SetText(0)
-
-	frame:SetWidth(cooldownPosition + cooldownLableWidth)
 	frame:Show()
 	table.insert(aGroup.myFrames, frame)
 	self:RepositionFramesInGroup(aGroup)
@@ -591,24 +437,70 @@ function KRC_Display:RemoveFrameFromGroup(aFrame, aFrameIndex, aGroup)
 	self:RepositionFramesInGroup(aGroup)
 end
 
+function KRC_Display:PlaceIconAndCasterNameInFrame(aFrame, someSettings)
+	aFrame.myCasterLable.Text:SetWidth(someSettings.myCasterLableWidth)
+
+	local endPosition = 0
+	if someSettings.myIconOnLeft == true then
+		aFrame.icon:SetPoint("TOPLEFT", aFrame, "TOPLEFT", 0, 0)
+
+		local casterPosition = aFrame.icon:GetWidth() + 2
+		aFrame.myCasterLable.Text:SetPoint("TOPLEFT", aFrame, "TOPLEFT", casterPosition, 0)
+
+		endPosition = casterPosition + aFrame.myCasterLable.Text:GetWidth() + 5
+	else
+		aFrame.myCasterLable.Text:SetPoint("TOPLEFT", aFrame, "TOPLEFT", 0, 0)
+
+		local iconPosition = aFrame.myCasterLable.Text:GetWidth() + 5
+		aFrame.icon:SetPoint("TOPLEFT", aFrame, "TOPLEFT", iconPosition, -1)
+
+		endPosition = iconPosition + aFrame.icon:GetWidth() + 5
+	end
+
+	return endPosition
+end
+
+function KRC_Display:PlaceExtraInfoInFrame(aFrame, someSettings, aStartPosition)
+	local endPosition = 0
+	if someSettings.myShouldShowExtraInfo == true then
+		aFrame.myExtraDetailsLable.Text:Show()
+		aFrame.myExtraDetailsLable.Text:SetPoint("TOPLEFT", aFrame, "TOPLEFT", aStartPosition, 0)
+		aFrame.myExtraDetailsLable.Text:SetWidth(someSettings.myExtraDetailsLableWidth)
+
+		endPosition = aStartPosition + aFrame.myExtraDetailsLable.Text:GetWidth() + 5
+	else
+		aFrame.myExtraDetailsLable.Text:Hide()
+		endPosition = aStartPosition + 5
+	end
+
+	return endPosition
+end
+
+function KRC_Display:PlaceSpellNameInFrame(aFrame, someSettings, aStartPosition)
+	local endPosition = 0
+	if someSettings.myHideSpellName == true then
+		aFrame.mySpellLabel.Text:Hide()
+		endPosition = aStartPosition + 5
+	else
+		aFrame.mySpellLabel.Text:Show()
+		aFrame.mySpellLabel.Text:SetPoint("TOPLEFT", aFrame, "TOPLEFT", aStartPosition, 0)
+		aFrame.mySpellLabel.Text:SetWidth(someSettings.mySpellLableWidth)
+
+		endPosition = aStartPosition + aFrame.mySpellLabel.Text:GetWidth() + 5
+	end
+
+	return endPosition
+end
+
 function KRC_Display:RepositionFramesInGroup(aGroup)
 	table.sort(aGroup.myFrames, CompareFrames)
 
 	local groupSettings = self:GetGroupSettings(aGroup.myTitle)
 
-	local generalSpacing = 2
-	local spellSpacing = 2
-	local classSpacing = 2
-	local growUpwards = false
-	if(groupSettings ~= nil) then
-		generalSpacing = groupSettings.myGeneralSpacing
-		spellSpacing = groupSettings.mySpellSpacing
-		classSpacing = groupSettings.myClassSpacing
-		growUpwards = groupSettings.myGrowBarsUp
-	end
-
-	local frameMovement = generalSpacing + self.myTextHeight
-	if(growUpwards == true) then
+	local spellSpacing = groupSettings.mySpellSpacing
+	local classSpacing = groupSettings.myClassSpacing
+	local frameMovement = groupSettings.myGeneralSpacing + self.myTextHeight
+	if(groupSettings.myGrowBarsUp == true) then
 		frameMovement = -frameMovement
 		spellSpacing = -spellSpacing
 		classSpacing = -classSpacing
@@ -646,16 +538,11 @@ function KRC_Display:RepositionFramesInGroup(aGroup)
 	for i = 1, table.getn(aGroup.myFrames) do
 		local frame = aGroup.myFrames[i]
 
-		frame.myCasterLable.Text:SetWidth(groupSettings.myCasterLableWidth)
-
-		local iconPosition = frame.myCasterLable.Text:GetWidth() + 5
-		frame.icon:SetPoint("TOPLEFT", frame, "TOPLEFT", iconPosition, -1)
-
-		local spellPosition = iconPosition + frame.icon:GetWidth() + 5
-		frame.mySpellLabel.Text:SetPoint("TOPLEFT", frame, "TOPLEFT", spellPosition, 0)
-		frame.mySpellLabel.Text:SetWidth(groupSettings.mySpellLableWidth)
-
-		local cooldownPosition = spellPosition + frame.mySpellLabel.Text:GetWidth() + 5
+		local extraInfoPosition = self:PlaceIconAndCasterNameInFrame(frame, groupSettings)
+		local spellPosition = self:PlaceExtraInfoInFrame(frame, groupSettings, extraInfoPosition)
+		local cooldownPosition = self:PlaceSpellNameInFrame(frame, groupSettings, spellPosition)
+		
+		
 		frame.myCooldownLabel.Text:SetPoint("TOPLEFT", frame, "TOPLEFT", cooldownPosition, 0)
 		frame.myCooldownLabel.Text:SetWidth(groupSettings.myCooldownLableWidth)
 
@@ -677,11 +564,20 @@ function KRC_Display:RepositionFramesInGroup(aGroup)
 	aGroup.myMainFrame.myBackground:SetHeight(height)
 
 	aGroup.myMainFrame.myBackground:ClearAllPoints()
-	if(growUpwards == true) then
+	if(groupSettings.myGrowBarsUp == true) then
 		aGroup.myMainFrame.myBackground:SetPoint("BOTTOMLEFT", aGroup.myMainFrame, "TOPLEFT", 0, -self.myTextHeight)
 	else
 		aGroup.myMainFrame.myBackground:SetPoint("TOPLEFT", aGroup.myMainFrame, "TOPLEFT", 0, 0)
 	end
+end
+
+function KRC_Display:RepositionFramesInGroupWithName(aGroupName)
+	local realGroup = self.myGroups[aGroupName]
+	if (realGroup == nil) then
+		return
+	end
+
+	self:RepositionFramesInGroup(realGroup)
 end
 
 function KRC_Display:FindFrameInGroup(aGroup, aSpellID, aCasterName)
@@ -700,175 +596,221 @@ end
 --
 -- Updates
 --
-
-function KRC_Display:IsUnitValid(aCasterName, someCasterData)
-	if(someCasterData.myUnitID == nil) then
-		self:DebugPrint("UnitID for " .. aCasterName .. " is invalid.")
-		return false
+function KRC_Display:TranslateRoleToSpecc(aRole)
+	if(aRole == "tank") then
+		return "Tank"
 	end
 
-	if (UnitIsVisible(someCasterData.myUnitID) == nil) then
-		self:DebugPrint(aCasterName .. " .. (" .. someCasterData.myUnitID .. ") is not visible.")
-		return false
+	if(aRole == "melee" or aRole == "caster") then
+		return "DPS"
 	end
 
-	if (UnitExists(someCasterData.myUnitID) == nil) then
-		self:DebugPrint(aCasterName .. " .. (" .. someCasterData.myUnitID .. ") doesnt exist.")
-		return false
-	end
-
-	if (KRC_Helpers:UnitIsInOurRaidOrParty(aCasterName) == false) then
-		self:DebugPrint(aCasterName .. " is not in our group or raid.")
-		return false
-	end
-
-	return true
+	return "Heal"
 end
 
-function KRC_Display:CanUnitCastSpell(aCasterName, aSpellID, someCasterData)
-	local casterSpecc = self:GetPlayerSpecc(aCasterName)
-	local spellRequirements = KRC_Spells:GetSpellTalentRequirements(someCasterData.myClass, aSpellID)
-	if(spellRequirements ~= nil) then
-		if(casterSpecc == nil) then
-			self:DebugPrint(aCasterName .. " has no specc set, dont know if he/she can cast " .. GetSpellInfo(aSpellID) .. ", disabeling it.")
-			return false
-		end
-
-		if(spellRequirements[casterSpecc] == nil) then
-			self:DebugPrint(aCasterName .. " cant cast spell " .. GetSpellInfo(aSpellID) .. ", its not available to specc " .. casterSpecc)
-			return false
-		end
+function KRC_Display:ShouldGroupShowSpell(aCasterRole, aSpellID, aGroup)
+	if(self:IsGroupHidden(aGroup.myTitle) == true) then
+		return false
 	end
 
-	return true
-end
-
-function KRC_Display:ShouldGroupShowSpell(aCasterName, aCasterClass, aSpellID, aGroup)
-	if (aGroup.mySpells[aSpellID].myEnabled == false or aGroup.mySpells[aSpellID].myEnabled == nil) then
+	if (aGroup.mySpells[aSpellID] == nil or aGroup.mySpells[aSpellID].myEnabled == false or aGroup.mySpells[aSpellID].myEnabled == nil) then
 		self:DebugPrint("Spell " .. GetSpellInfo(aSpellID) .. " is not enabled in group " .. aGroup.myTitle .. ", hiding it.")
 		return false
 	end
 
-	local casterSpecc = self:GetPlayerSpecc(aCasterName)
-	if(casterSpecc == nil) then
-		self:DebugPrint(aCasterName .. " has no specc set, wont show him/her in group " .. aGroup.myTitle)
-		return false;
-	end
-
-	if (self:IsSpeccActiveForSpellInGroup(aGroup.myTitle, aCasterClass, aSpellID, casterSpecc) == false) then
-		self:DebugPrint("Specc " .. casterSpecc .. " for spell " .. GetSpellInfo(aSpellID) .. " is not enabled in group " .. aGroup.myTitle .. ", hiding it.")
+	local specc = self:TranslateRoleToSpecc(aCasterRole)
+	if (self:IsSpeccActiveForSpellInGroup(aGroup.myTitle, aSpellID, specc) == false) then
+		self:DebugPrint("Specc " .. specc .. " for spell " .. GetSpellInfo(aSpellID) .. " is not enabled in group " .. aGroup.myTitle .. ", hiding it.")
 		return false
 	end
 
 	return true
 end
 
-function KRC_Display:UpdateFrameProgress(aFrame, someCasterData, aShouldAlwaysShow)
-	local remainingTime = someCasterData.myRemainingCD
-
-	aFrame.myRemainingCD = remainingTime
-	if(remainingTime == nil) then
-		aFrame.myRemainingCD = 0
-	end
-
-	if (aFrame.myRemainingCD > 0) then
-		aFrame.myCooldownLabel.Text:SetTextColor(0.85, 0.1, 0.1)
-		aFrame.myCooldownLabel.Text:SetFormattedText(SecondsToTimeDetail(aFrame.myRemainingCD))
-	elseif (aShouldAlwaysShow == true) then
-		aFrame.myCooldownLabel.Text:SetTextColor(0.1, 0.85, 0.1)
-		aFrame.myCooldownLabel.Text:SetText("READY")
-	end
-end
-
-function KRC_Display:AddExtraInformation(aGroupName, aFrame, aSpellID, aCasterName, someCasterData)
-	if(someCasterData.myHasNewData == false or someCasterData.myHasNewData == nil) then
-		return
-	end
-
+function KRC_Display:AddExtraInformation(aGroupName, aFrame, aCasterClass, aCooldown)
 	local groupSettings = self:GetGroupSettings(aGroupName)
 	if(groupSettings.myShouldShowExtraInfo == false) then
 		return
 	end
 
-	local spellShortName = KRC_Spells:GetShortName(someCasterData.myClass, aSpellID)
+	local spellShortName = KRC_Spells:GetShortName(aCasterClass, aCooldown.spellId)
 
-
-	if(KRC_Spells:IsAuraMastery(aSpellID) == true) then
-		if(someCasterData.myRemainingCD == nil) then
-			aFrame.mySpellLabel.Text:SetText(spellShortName)
-		else
-			local paladinAura = KRC_DataCollector:GetPaladinAura(aCasterName)
-			local auraShortName = KRC_Spells:GetPaladinAuraShortName(paladinAura)
-			aFrame.mySpellLabel.Text:SetText(spellShortName .. " (" .. auraShortName .. ")")
-		end
-
+	if(KRC_Spells:IsAuraMastery(aCooldown.spellId) == true) then
+		local auraShortName = self:GetPaladinAuraShortName(aCooldown.name)
+		aFrame.myExtraDetailsLable.Text:SetText("(" .. auraShortName .. ")")
 		return
 	end
 
-	if(someCasterData.myTarget ~= nil) then
-		if(someCasterData.myRemainingCD == nil) then
-			aFrame.mySpellLabel.Text:SetText(spellShortName)
-		else
-			aFrame.mySpellLabel.Text:SetText(spellShortName .. " (" .. someCasterData.myTarget .. ")")
-		end
-	end
-end
-
-function KRC_Display:UpdateSpellForCasterInGroup(aSpellID, aCasterName, someCasterData, aGroup)
-	if(aGroup.mySpells[aSpellID] == nil) then
-		return
-	end
-
-	local frame, frameIndex = self:FindFrameInGroup(aGroup, aSpellID, aCasterName)
-	if(self:IsUnitValid(aCasterName, someCasterData) == false) then
-		self:RemoveFrameFromGroup(frame, frameIndex, aGroup)
-		return
-	end
-
-	if(self:CanUnitCastSpell(aCasterName, aSpellID, someCasterData) == false) then
-		self:RemoveFrameFromGroup(frame, frameIndex, aGroup)
-		return
-	end
-
-	if(self:ShouldGroupShowSpell(aCasterName, someCasterData.myClass, aSpellID, aGroup) == false) then
-		self:RemoveFrameFromGroup(frame, frameIndex, aGroup)
-		return
-	end
-
-	-- If the spell is on cooldown, or we should always show this spell then we require a frame,
-	-- which means we have to create one if we didnt have one allready
-	local shouldAlwaysShow = aGroup.mySpells[aSpellID].myAlwaysShow
-	local isOnCooldown = someCasterData.myRemainingCD ~= nil
-
-	local frameRequired = isOnCooldown or shouldAlwaysShow
-	if (frame == nil and frameRequired == true) then
-		frame, frameIndex = self:CreateFrameAndAddToGroup(aGroup, aSpellID, aCasterName, someCasterData.myClass)
-	end
-
-	if(frame ~= nil) then
-		if(frameRequired == false) then
-			self:DebugPrint("Removing " .. GetSpellInfo(aSpellID) .. " from " .. aCasterName .. ", the frame is not required anymore")
-			self:RemoveFrameFromGroup(frame, frameIndex, aGroup)
-		else
-			self:UpdateFrameProgress(frame, someCasterData, shouldAlwaysShow)
-			self:AddExtraInformation(aGroup.myTitle, frame, aSpellID, aCasterName, someCasterData)
-		end
+	if(aCooldown.targetName ~= nil and aFrame.myRemainingCD ~= nil) then
+		aFrame.myExtraDetailsLable.Text:SetText("(" .. aCooldown.targetName .. ")")
 	end
 end
 
 function KRC_Display:Update()
-	for spellID, spellData in pairs(KRC_DataCollector.myData) do
-		for casterName, casterData in pairs(spellData) do
-			for groupName, group in pairs(self.myGroups) do
-				if(self:IsGroupHidden(groupName) == false) then
-					self:UpdateSpellForCasterInGroup(spellID, casterName, casterData, group)
+	self:UpdatePaladinAuras()
+
+	for groupName, group in pairs(self.myGroups) do
+		if(self:IsGroupHidden(groupName) == false) then
+			for _, frame in pairs(group.myFrames) do
+				
+				if(frame.myRemainingCD == nil) then
+					frame.myRemainingCD = 0
+				elseif(frame.myRemainingCD > 0) then
+					frame.myRemainingCD = frame.myRemainingCD - 1
+				end
+
+				if (frame.myRemainingCD > 0) then
+					frame.myCooldownLabel.Text:SetTextColor(0.85, 0.1, 0.1)
+					frame.myCooldownLabel.Text:SetFormattedText(SecondsToTimeDetail(frame.myRemainingCD))
+				else
+					frame.myCooldownLabel.Text:SetTextColor(0.1, 0.85, 0.1)
+					frame.myCooldownLabel.Text:SetText("READY")
 				end
 			end
-
-			if(casterData.myHasNewData == true) then
-				casterData.myHasNewData = false
-			end
 		end
+	end
+end
+
+function KRC_Display:CooldownStarted(aGroup, aCooldown)
+	local _, casterClass = GetPlayerInfoByGUID(aCooldown.casterGUID)
+	if(casterClass == nil) then
+		return
+	end
+
+	local casterRole = self.GroupTalents:GetGUIDRole(aCooldown.casterGUID)
+	local frame, frameIndex = self:FindFrameInGroup(aGroup, aCooldown.spellId, aCooldown.casterName)
+
+	if(self:ShouldGroupShowSpell(casterRole, aCooldown.spellId, aGroup) == false) then
+		self:RemoveFrameFromGroup(frame, frameIndex, aGroup)
+		return
+	end
+
+	if(frame == nil) then
+		frame, frameIndex = self:CreateFrameAndAddToGroup(aGroup, aCooldown.spellId, aCooldown.casterName, casterClass)
+	end
+
+	frame.myRemainingCD = aCooldown.duration
+	frame.myCooldownLabel.Text:SetTextColor(0.85, 0.1, 0.1)
+	frame.myCooldownLabel.Text:SetFormattedText(SecondsToTimeDetail(frame.myRemainingCD))
+
+	self:AddExtraInformation(aGroup.myTitle, frame, casterClass, aCooldown)
+end
+
+function KRC_Display:CooldownReady(aGroup, aCooldown)
+	local _, casterClass = GetPlayerInfoByGUID(aCooldown.casterGUID)
+	if(casterClass == nil) then
+		return
+	end
+
+	local casterRole = self.GroupTalents:GetGUIDRole(aCooldown.casterGUID)
+	local frame, frameIndex = self:FindFrameInGroup(aGroup, aCooldown.spellId, aCooldown.casterName)
+
+	if(self:ShouldGroupShowSpell(casterRole, aCooldown.spellId, aGroup) == false) then
+		self:RemoveFrameFromGroup(frame, frameIndex, aGroup)
+		return
+	end
+
+	if(frame ~= nil) then
+		frame.myRemainingCD = 0
+
+		if(aGroup.mySpells[aCooldown.spellId].myAlwaysShow == false) then
+			self:RemoveFrameFromGroup(frame, frameIndex, aGroup)
+		end
+	end
+end
+
+function KRC_Display:CooldownChanged(aGroup, aCooldown)
+	local _, casterClass = GetPlayerInfoByGUID(aCooldown.casterGUID)
+	if(casterClass == nil) then
+		return
+	end
+
+	local casterRole = self.GroupTalents:GetGUIDRole(aCooldown.casterGUID)
+	local frame, frameIndex = self:FindFrameInGroup(aGroup, aCooldown.spellId, aCooldown.casterName)
+
+	if(self:ShouldGroupShowSpell(casterRole, aCooldown.spellId, aGroup) == false) then
+		self:RemoveFrameFromGroup(frame, frameIndex, aGroup)
+		return
+	end
+
+	if(frame ~= nil) then
+		frame.myRemainingCD = aCooldown.expirationTime - aCooldown.creation
+		frame.myCooldownLabel.Text:SetTextColor(0.85, 0.1, 0.1)
+		frame.myCooldownLabel.Text:SetFormattedText(SecondsToTimeDetail(frame.myRemainingCD))
+
+		if(frame.myRemainingCD == 0 and aGroup.mySpells[aCooldown.spellId].myAlwaysShow == false) then
+			self:RemoveFrameFromGroup(frame, frameIndex, aGroup)
+		end
+	end
+end
+
+function KRC_Display:CooldownAvailable(aGroup, aCooldown)
+	local _, casterClass = GetPlayerInfoByGUID(aCooldown.casterGUID)
+	if(casterClass == nil) then
+		return
+	end
+
+	local casterRole = self.GroupTalents:GetGUIDRole(aCooldown.casterGUID)
+	local frame, frameIndex = self:FindFrameInGroup(aGroup, aCooldown.spellId, aCooldown.casterName)
+
+	if(self:ShouldGroupShowSpell(casterRole, aCooldown.spellId, aGroup) == false) then
+		self:RemoveFrameFromGroup(frame, frameIndex, aGroup)
+		return
+	end
+
+	if(frame == nil and aGroup.mySpells[aCooldown.spellId].myAlwaysShow == true) then
+		frame, frameIndex = self:CreateFrameAndAddToGroup(aGroup, aCooldown.spellId, aCooldown.casterName, casterClass)
+	end
+
+	if(frame ~= nil) then
+		frame.myRemainingCD = 0
+		frame.myCooldownLabel.Text:SetTextColor(0.1, 0.85, 0.1)
+		frame.myCooldownLabel.Text:SetText("READY")
+	end
+end
+
+function KRC_Display:CooldownUnavailable(aGroup, aCooldown)
+	local frame, frameIndex = self:FindFrameInGroup(aGroup, aCooldown.spellId, aCooldown.casterName)
+	self:RemoveFrameFromGroup(frame, frameIndex, aGroup)
+end
+
+function KRC_Display:RAID_COOLDOWN_STARTED(cooldown)          --when the cooldown of the spell cooldown.name starts
+	self:DebugPrint("Cooldown for " .. GetSpellInfo(cooldown.spellId) .. " from " .. cooldown.name .. " started!")
+
+	for groupName, group in pairs(self.myGroups) do
+		self:CooldownStarted(group, cooldown)
+	end
+end
+
+function KRC_Display:RAID_COOLDOWN_CHANGED(cooldown)        --when the cooldown of the spell cooldown.name changes
+	self:DebugPrint("Cooldown for " .. GetSpellInfo(cooldown.spellId) .. " from " .. cooldown.name .. " changed!")
+
+	for groupName, group in pairs(self.myGroups) do
+		self:CooldownChanged(group, cooldown)
+	end
+end
+
+function KRC_Display:RAID_COOLDOWN_READY(cooldown)          --when the cooldown of the spell cooldown.name ends
+	self:DebugPrint("Cooldown for " .. GetSpellInfo(cooldown.spellId) .. " from " .. cooldown.name .. " ended!")
+
+	for groupName, group in pairs(self.myGroups) do
+		self:CooldownReady(group, cooldown)
+	end
+end
+
+function KRC_Display:RAID_COOLDOWN_AVAILABLE(cooldown)      --when a cooldown becomes available (a druid joins the party, innervate becomes available)
+	self:DebugPrint("Spell " .. GetSpellInfo(cooldown.spellId) .. " from " .. cooldown.name .. " is available!")
+
+	for groupName, group in pairs(self.myGroups) do
+		self:CooldownAvailable(group, cooldown)
+	end
+end
+
+function KRC_Display:RAID_COOLDOWN_UNAVAILABLE(cooldown)    --when a cooldown becomes unavailable (a druid leaves the party, innervate becomes unavailable)
+	self:DebugPrint("Spell " .. GetSpellInfo(cooldown.spellId) .. " from " .. cooldown.name .. " is unavailable!")
+
+	for groupName, group in pairs(self.myGroups) do
+		self:CooldownUnavailable(group, cooldown)
 	end
 end
 
@@ -888,4 +830,50 @@ function KRC_Display:CreateText(aName, aParent)
 	frame.Text:SetText("")
 
 	return frame
+end
+
+function KRC_Display:GetPaladinAura(aPaladinName)
+	local cachedAuras = KRC_Spells.myPaladinAuras
+
+	for i = 1, 7 do
+		local auraData = self.myPaladinAuras[cachedAuras[i].Name]
+		if(auraData ~= nil) then
+			if auraData == aPaladinName then
+				return cachedAuras[i].Name
+			end
+		end
+	end
+	return nil
+end
+
+function KRC_Display:GetPaladinAuraShortName(aPaladinName)
+	local longName = self:GetPaladinAura(aPaladinName)
+
+	if(longName == nil) then
+		return "N"
+	end
+	
+	local cachedAuras = KRC_Spells.myPaladinAuras
+	for i = 1, 7 do
+		if(cachedAuras[i]["Name"] == longName) then
+			return cachedAuras[i]["ShortName"]
+		end
+	end
+
+	self:Print("Failed to find a shortname for " .. longName)
+	return "N"
+end
+
+function KRC_Display:UpdatePaladinAuras()
+	local cachedAuras = KRC_Spells.myPaladinAuras
+	for i = 1, 7 do
+		local auraName = cachedAuras[i]["Name"]
+		local name,_,_,_,_,_,_, source = UnitBuff("player", auraName)
+		if (name ~= nil) then
+			local sourceName = UnitName(source)
+			self.myPaladinAuras[auraName] = sourceName
+		else
+			self.myPaladinAuras[auraName] = nil
+		end
+	end
 end

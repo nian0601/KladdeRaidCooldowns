@@ -123,6 +123,7 @@ local function GetAuraTable()
     icon            = nil,
     classification  = nil,
     isStealable     = nil,
+    targetName      = nil,
   }
 
   return table
@@ -142,19 +143,47 @@ end
 
 local TalentInfo = {
   ["DEATHKNIGHT"] = {
+    [48792]   = {name = "Icebound Fortitude", tree = nil, duration = 120, },
+    [42650]   = {name = "Army of the Dead", tree = nil, duration = 600, },
+    [61999]   = {name = "Raise Ally", tree = nil, duration = 600, },
+    [49206]   = {name = "Dancing Rune Weapon", tree = 1, talent = 28, duration = 90, ranks = {[1] = 0, }, },
+    [49206]   = {name = "Summon Gargoyle", tree = 3, talent = 31, duration = 180, ranks = {[1] = 0, }, },
+    [47476]   = {name = "Strangulate", tree = nil, duration = 120, },
+    [49576]   = {name = "Death Grip", tree = nil, duration = 35, },
+    [51271]   = {name = "Unbreakable Armor", tree = 2, talent = 24, duration = 120, ranks = {[1] = 0, }, },
+    [55233]   = {name = "Vampiric Blood", tree = 1, talent = 23, duration = 60, ranks = {[1] = 0, }, },
+    [49222]   = {name = "Bone Shield", tree = 3, talent = 26, duration = 120, ranks = {[1] = 0, }, },
+    [47528]   = {name = "Mind Freeze", tree = nil, duration = 10, },
+    [48707]   = {name = "Anti-Magic Shell", tree = nil, duration = 45, },
   },
   ["DRUID"] = {
     [29166]   = {name = "Innervate", tree = nil, duration = 180, },
     [48477]   = {name = "Rebirth", tree = nil, duration = 600, },
     [48447]   = {name = "Tranquility", tree = 3, talent = 14, duration = 480, ranks = {[0] = 0, [1] = -144, [2] = -288, }, },
+    [17116]   = {name = "Nature's Swiftness", tree = 3, talent = 12, duration = 180, ranks = {[1] = 0, }, },
+    [5209]   = {name = "Challenging Roar", tree = nil, duration = 180, },
+    [61336]   = {name = "Survival Instincts", tree = 2, talent = 7, duration = 180, ranks = {[1] = 0, }, },
+    [22812]   = {name = "Barkskin", tree = nil, duration = 60, },
+    [5229]   = {name = "Enrage", tree = nil, duration = 60, },
+    [22842]   = {name = "Frenzied Regeneration", tree = nil, duration = 180, },
   },
   ["HUNTER"] = {
     [34477]   = {name = "Misdirection", tree = nil, duration = 30, noCombatLog = true, },
     [23989]   = {name = "Readiness", tree = 2, talent = 14, duration = 180, ranks = {[1] = 0, }, },
+    [5384]   = {name = "Feign Death", tree = nil, duration = 30, },
+    [62757]   = {name = "Call Stabled Pet", tree = nil, duration = 300, },
+    [781]   = {name = "Disengage", tree = nil, duration = 25, },
+    [34490]   = {name = "Silencing Shot", tree = 2, talent = 24, duration = 20, ranks = {[1] = 0, }, },
+    [13809]   = {name = "Frost Trap", tree = nil, duration = 30, },
+    [19263]   = {name = "Deterrence", tree = nil, duration = 90, },
   },
   ["MAGE"] = {
     [45438]   = {name = "Iceblock", tree = 3, talent = 3, duration = 300, ranks = {[0] = 0, [1] = -21, [2] = -42, [3] = -60}, }, 
     [11958]   = {name = "Cold Snap", tree = 3, talent = 14, duration = 480, ranks = {[1] = 0, }, }, 
+    [2139]   = {name = "Counterspell", tree = nil, duration = 24, },
+    [31687]   = {name = "Summon Water Elemental", tree = 3, talent = 25, duration = 180, ranks = {[1] = 0, }, },
+    [12051]   = {name = "Evocation", tree = nil, duration = 240, },
+    [66]   = {name = "Invisibility", tree = nil, duration = 180, },
   },
   ["PALADIN"] = {
     [31821]   = {name = "Aura Mastery", tree = 1, talent = 6, duration = 120, ranks = {[1] = 0, }, },
@@ -164,7 +193,13 @@ local TalentInfo = {
     [1038]    = {name = "Hand of Salvation", tree = nil, duration = 120},
     [10278]   = {name = "Hand of Protection", tree = 2, talent = 4, duration = 300, ranks = {[0] = 0, [1] = -60, [2] = -120, }, },
     [6940]    = {name = "Hand of Sacrifice", tree = nil, duration = 120,}, 
+    [1044]    = {name = "Hand of Freedom", tree = nil, duration = 25,}, 
     [48788]   = {name = "Lay on Hands", tree = 1, talent = 8, duration = 900, ranks = {[0] = 0, [1] = -120, [2] = -240,}, },
+    [20216]   = {name = "Divine Favor", tree = 1, talent = 13, duration = 120, ranks = {[1] = 0, }, },
+    [31842]   = {name = "Divine Illumination", tree = 1, talent = 22, duration = 180, ranks = {[1] = 0, }, },
+    [19752]   = {name = "Divine Intervention", tree = nil, duration = 600, },
+    [54428]   = {name = "Divine Plea", tree = nil, duration = 60, },
+    [66233]   = {name = "Ardent Defender", tree = 2, talent = 18, duration = 120, ranks = {[1] = 0, }, },
   },
   ["PRIEST"] = {
     [64843]   = {name = "Divine Hymn", tree = nil, duration = 480, },
@@ -173,22 +208,56 @@ local TalentInfo = {
     [64901]   = {name = "Hymn of Hope", tree = nil, duration = 360, }, 
     [33206]   = {name = "Pain Suppresion", tree = 1, talent = 25, duration = 180, ranks = {[1] = 0, }, }, 
     [54521]   = {name = "Power Infusion", tree = 1, talent = 19, duration = 120, ranks = {[1] = 0, }, }, 
+    [34433]   = {name = "Shadowfiend", tree = nil, duration = 300, },
+    [47585]   = {name = "Dispersion", tree = 3, talent = 27, duration = 180, ranks = {[1] = 0, }, },
   },
   ["ROGUE"] = {
     [57934]   = {name = "Tricks of the Trade", tree = nil, duration = 30, noCombatLog = true, }, 
     [14185]   = {name = "Preparation", tree = 3, talent = 14, duration = 480, ranks = {[1] = 0, }, },
+    [31224]   = {name = "Cloak of Shadows", tree = nil, duration = 90, },
+    [38768]   = {name = "Kick", tree = nil, duration = 10, },
+    [1725]   = {name = "Distract", tree = nil, duration = 30, },
+    [13750]   = {name = "Adrenaline Rush", tree = 2, talent = 20, duration = 180, ranks = {[1] = 0, }, },
+    [13877]   = {name = "Blade Flurry", tree = 2, talent = 15, duration = 120, ranks = {[1] = 0, }, },
+    [14177]   = {name = "Cold Blood", tree = 1, talent = 13, duration = 180, ranks = {[1] = 0, }, },
+    [11305]   = {name = "Sprint", tree = nil, duration = 180, },
+    [26889]   = {name = "Vanish", tree = nil, duration = 180, },
+    [2094]   = {name = "Blind", tree = nil, duration = 180, },
+    [26669]   = {name = "Evasion", tree = nil, duration = 180, },
+    [36554]   = {name = "Shadowstep", tree = 3, talent = 25, duration = 30, ranks = {[1] = 0, }, },
+    [51690]   = {name = "Killing Spree", tree = 2, talent = 28, duration = 120, ranks = {[1] = 0, }, },
+    [51713]   = {name = "Shadow Dance", tree = 3, talent = 28, duration = 60, ranks = {[1] = 0, }, },
+    [14183]   = {name = "Premeditation", tree = 3, talent = 20, duration = 20, ranks = {[1] = 0, }, },
   },
   ["SHAMAN"] = {
     [2825]    = {name = "Bloodlust", tree = nil, duration = 300, },  
     [32182]   = {name = "Heroism", tree = nil, duration = 300, },  
     [16190]   = {name = "Mana Tide Totem", tree = 3, talent = 17, duration = 300, ranks = {[1] = 0, }, }, 
     [20608]   = {name = "Reincarnation", tree = 3, talent = 3, duration = 1800, ranks = {[0] = 0, [1] = -420, [2] = -900, }, }, 
+    [2894]   = {name = "Fire Elemental Totem", tree = nil, duration = 600, },
+    [2062]   = {name = "Earth Elemental Totem", tree = nil, duration = 600, },
+    [16188]   = {name = "Nature's Swiftness", tree = 3, talent = 13, duration = 180, ranks = {[1] = 0, }, },
+    [57994]   = {name = "Wind Shear", tree = nil, duration = 6, },
   },
   ["WARLOCK"] = {
     [29858]   = {name = "Soulshatter", tree = nil, duration = 180, },
     [47883]   = {name = "Soulstone Resurrection", tree = nil, duration = 900},
+    [47241]   = {name = "Metamorphosis", tree = 2, talent = 27, duration = 180, ranks = {[1] = 0, }, },
+    [18708]   = {name = "Fel Domination", tree = 2, talent = 10, duration = 900, ranks = {[1] = 0, }, },
+    [698]   = {name = "Ritual of Summoning", tree = nil, duration = 120, },
+    [58887]   = {name = "Ritual of Souls", tree = nil, duration = 300, },
   },
   ["WARRIOR"] = {
+    [871]   = {name = "Shield Wall", tree = nil, duration = 300, },
+    [1719]   = {name = "Recklessness", tree = nil, duration = 300, },
+    [20230]   = {name = "Retaliation", tree = nil, duration = 300, },
+    [12975]   = {name = "Last Stand", tree = 3, talent = 6, duration = 180, ranks = {[1] = 0, }, },
+    [6554]   = {name = "Pummel", tree = nil, duration = 10, },
+    [1161]   = {name = "Challenging Shout", tree = nil, duration = 180, },
+    [5246]   = {name = "Intimidating Shout", tree = nil, duration = 180, },
+    [64380]   = {name = "Shattering Throw", tree = nil, duration = 300, },
+    [55694]   = {name = "Enraged Regeneration", tree = nil, duration = 180, },
+    [72]   = {name = "Shield Bash", tree = nil, duration = 12, },
   },
 }
 
@@ -433,7 +502,7 @@ end
 --[[ Note:
   duration overrides the model.duration value (usefull for special cases like Guardian Spirit)
 --]]
-local function StartCooldown(unitInfo, model, duration) 
+local function StartCooldown(unitInfo, model, duration, targetName) 
   -- The cooldown was available/in progress, mark it as unavailable/ready
   for _, other in pairs(unitInfo.cooldowns) do
     if other.spellId == model.spellId then
@@ -470,6 +539,7 @@ local function StartCooldown(unitInfo, model, duration)
   cooldown.icon            = model.icon
   cooldown.classification  = "none"
   cooldown.isStealable     = false
+  cooldown.targetName      = targetName
   
   cooldown.timer           = C_Timer.NewTimer(cooldown.duration, function() EndCooldown(unitInfo, model, cooldown) end)
 
@@ -485,12 +555,12 @@ end
 --[[ Note:
   when extendOnly is true then the cooldown duration cannot be lowered
 --]]
-local function ChangeCooldown(unitInfo, model, oldCooldown, newDuration, extendOnly)
+local function ChangeCooldown(unitInfo, model, oldCooldown, newDuration, extendOnly, targetName)
   local now = GetTime()
   
   -- If the cooldown is available, it is not changed, it is started
   if oldCooldown.duration == 0 then
-    StartCooldown(unitInfo, model, newDuration)
+    StartCooldown(unitInfo, model, newDuration, targetName)
     return
   end
   
@@ -517,6 +587,7 @@ local function ChangeCooldown(unitInfo, model, oldCooldown, newDuration, extendO
   cooldown.icon            = model.icon
   cooldown.classification  = "none"
   cooldown.isStealable     = false
+  cooldown.targetName      = targetName
   
   cooldown.timer           = C_Timer.NewTimer(cooldown.duration, function() EndCooldown(unitInfo, model, cooldown) end)
 
@@ -560,7 +631,7 @@ CombatLogEventHandlers["SPELL_CAST_SUCCESS"] = function(sourceGUID, sourceName, 
   local cooldowns = unitInfo.cooldowns
 
   if models[spellId] and not models[spellId].noCombatLog then
-    StartCooldown(unitInfo, models[spellId])
+    StartCooldown(unitInfo, models[spellId], nil, targetName)
   end
 
   if unitInfo.class == "PALADIN" and spellId == 31884 then -- Avenging Wrath causes a 30s CD on Wall & Bubble
