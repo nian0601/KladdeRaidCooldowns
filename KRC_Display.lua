@@ -25,6 +25,8 @@ KRC_Display.myFreeFrames = {}
 KRC_Display.myPaladinAuras = {}
 KRC_Display.myEnableDebugPrinting = false
 
+local barBackgroundColor = {0.0, 0.0, 0.0, 0.7}
+
 function KRC_Display:Init()
 	self.LibRaidCooldowns = LibStub("LibRaidCooldowns")
 	self.LibRaidCooldowns:Register(self)
@@ -35,12 +37,16 @@ function KRC_Display:Init()
 
 	self:InitializeGlobalDBVariables()
 
+	local foundGroup = false
 	for groupName, groupSettings in pairs(KRC_Core.db.profile.myGroups) do
 		self:CreateEmptyGroup(groupName)
 		self:ApplyGroupSettings(self.myGroups[groupName], groupSettings)
+		foundGroup = true
 	end
 
-	--self:CreateEmptyGroup("Raid CDs")
+	if(foundGroup == false) then
+		self:CreateEmptyGroup("Temp")
+	end
 end
 
 function KRC_Display:DebugPrint(aMessage)
@@ -159,11 +165,12 @@ function KRC_Display:CreateEmptyGroup(aGroupName)
 		aWidget:StopMovingOrSizing()
 		KRC_Core.db.profile.myGroups[aGroupName].myBottomLeftX = aWidget:GetLeft()
 		KRC_Core.db.profile.myGroups[aGroupName].myBottomLeftY = aWidget:GetTop()
+		self:RepositionFramesInGroup(group)
 	end)
 
 	mainFrame.myBackground = mainFrame:CreateTexture(nil, "LOW")
 	mainFrame.myBackground:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 0, 0)
-	mainFrame.myBackground:SetTexture(0.1, 0.07, 0.08, 0.8)
+	mainFrame.myBackground:SetTexture(barBackgroundColor[1], barBackgroundColor[2], barBackgroundColor[3], barBackgroundColor[4])
 	mainFrame.myBackground:SetWidth(mainFrame:GetWidth())
 	mainFrame.myBackground:SetHeight(mainFrame:GetHeight())
 

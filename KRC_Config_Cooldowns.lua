@@ -369,7 +369,8 @@ local function CreateSpellGroup(aScrollFrame, aClass, someSpellSpeccBoxes)
 		box:SetLabel(aString)
 
 		box:SetCallback("OnValueChanged", function(widget, event, value)
-			KRC_Display:SetSpeccStatusForSpellInGroup(ourSelectedGroup, aClass, aSpellID, aString, value)
+			KRC_Display:SetSpeccStatusForSpellInGroup(ourSelectedGroup, aSpellID, aString, value)
+			ApplySettings()
 		end)
 		box:SetWidth(60)
 

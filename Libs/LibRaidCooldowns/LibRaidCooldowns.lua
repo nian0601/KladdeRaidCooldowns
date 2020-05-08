@@ -258,6 +258,7 @@ local TalentInfo = {
     [64380]   = {name = "Shattering Throw", tree = nil, duration = 300, },
     [55694]   = {name = "Enraged Regeneration", tree = nil, duration = 180, },
     [72]   = {name = "Shield Bash", tree = nil, duration = 12, },
+    [2687]   = {name = "Bloodrage", tree = nil, duration = 40, },
   },
 }
 

@@ -115,7 +115,8 @@ KRC_Spells.mySpells = {
 		[5246] = { ["Name"] = "Intimidating Shout", ["ShortName"] = "Fear" },
 		[64380] = { ["Name"] = "Shattering Throw", ["ShortName"] = "Shatter" },
 		[55694] = { ["Name"] = "Enraged Regeneration", ["ShortName"] = "Reg" },
-		[72] = { ["Name"] = "Shield Bash", ["ShortName"] = "Bash" }
+		[72] = { ["Name"] = "Shield Bash", ["ShortName"] = "Bash" },
+		[2687] = { ["Name"] = "Bloodrage", ["ShortName"] = "BR" }
 	},
 	DEATHKNIGHT = {
 		[48792] = { ["Name"] = "Icebound Fortitude", ["ShortName"] = "IF" },
